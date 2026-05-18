@@ -1,8 +1,5 @@
 # Public Attention to Unemployment and Economic Insecurity: A Large-Scale Analysis of Wikipedia Pageviews (2019–2026)
 
-**LSC4SS Final Project — Solo project.**
-**Author:** *YOUR NAME*
-**Course:** Large-Scale Computing for the Social Sciences, Spring 2026
 
 ---
 
