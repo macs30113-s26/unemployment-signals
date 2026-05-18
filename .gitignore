@@ -1,0 +1,25 @@
+# Build artifacts
+ingest/build/
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.env
+
+# Analysis outputs that should be regenerable, but keep figures/ committed
+analyze/figures/granger_results.csv
+analyze/figures/changepoints.csv
+
+# AWS credentials — never commit
+.aws/
+credentials
+*.pem
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
