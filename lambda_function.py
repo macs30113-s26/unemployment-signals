@@ -1,0 +1,111 @@
+# Curated article list for "Public Attention to Unemployment & Economic Insecurity"
+#
+# All titles are EXACT Wikipedia article titles as of 2026 with underscores instead of spaces.
+# A title that has been moved/renamed appears in both `canonical` (current title) and
+# `aliases` (historical redirects). The aggregation job resolves aliases to canonical
+# titles before producing the final panel.
+#
+# Source for canonical titles: en.wikipedia.org (manually verified). Aliases come from
+# the Wikipedia REST API redirect endpoint and a small manual list of well-known
+# historical names (e.g., COVID-19 article was originally titled "Coronavirus_disease_2019"
+# in early 2020).
+#
+# Why these 4 groups: each reflects a distinct theoretical channel through which the
+# public could become anxious about employment in 2019–2026. Splitting them lets us
+# test whether attention to *classical* unemployment co-moves with attention to
+# *technology-induced* unemployment, or whether they trace separate cycles.
+
+groups:
+
+  # Group 1: Core unemployment concepts. These are the "baseline" articles that should
+  # respond directly to the unemployment rate.
+  core_unemployment:
+    description: "Direct unemployment concepts and statistics"
+    articles:
+      - canonical: "Unemployment"
+        aliases: []
+      - canonical: "Unemployment_in_the_United_States"
+        aliases: []
+      - canonical: "Unemployment_benefits"
+        aliases: ["Unemployment_insurance"]
+      - canonical: "Bureau_of_Labor_Statistics"
+        aliases: []
+      - canonical: "Labor_force"
+        aliases: ["Workforce"]
+      - canonical: "Long-term_unemployment"
+        aliases: []
+      - canonical: "Frictional_unemployment"
+        aliases: []
+      - canonical: "Structural_unemployment"
+        aliases: []
+
+  # Group 2: Acute labour-market stress. Articles people look up when they personally
+  # face layoffs or job loss.
+  labour_market_stress:
+    description: "Acute layoff / job-loss events and concepts"
+    articles:
+      - canonical: "Layoff"
+        aliases: ["Mass_layoff", "Redundancy_(employment)"]
+      - canonical: "Severance_package"
+        aliases: ["Severance_pay"]
+      - canonical: "Furlough"
+        aliases: []
+      - canonical: "WARN_Act"
+        aliases: ["Worker_Adjustment_and_Retraining_Notification_Act"]
+      - canonical: "Job_hunting"
+        aliases: ["Job_search"]
+      - canonical: "Résumé"
+        aliases: ["Resume_(employment)", "Curriculum_vitae"]
+      - canonical: "Career_break"
+        aliases: []
+
+  # Group 3: Broader macro insecurity. Concepts that capture economy-wide stress beyond
+  # just unemployment per se.
+  macro_insecurity:
+    description: "Macro-economic insecurity and downturn concepts"
+    articles:
+      - canonical: "Recession"
+        aliases: []
+      - canonical: "Great_Recession"
+        aliases: []
+      - canonical: "COVID-19_recession"
+        aliases: ["2020_recession", "Coronavirus_recession"]
+      - canonical: "Inflation"
+        aliases: []
+      - canonical: "Cost_of_living"
+        aliases: ["Cost-of-living_crisis"]
+      - canonical: "Stagflation"
+        aliases: []
+      - canonical: "Bankruptcy"
+        aliases: []
+      - canonical: "Personal_bankruptcy"
+        aliases: []
+
+  # Group 4: Technology displacement. The "future-of-work" anxiety channel. This is the
+  # most novel piece of the analysis — articles here should track a different cycle than
+  # the classical labour market.
+  tech_displacement:
+    description: "Technology / AI displacement of labour"
+    articles:
+      - canonical: "Technological_unemployment"
+        aliases: []
+      - canonical: "Automation"
+        aliases: []
+      - canonical: "Artificial_intelligence"
+        aliases: []
+      - canonical: "Generative_artificial_intelligence"
+        aliases: ["Generative_AI"]
+      - canonical: "Large_language_model"
+        aliases: []
+      - canonical: "ChatGPT"
+        aliases: []
+      - canonical: "Universal_basic_income"
+        aliases: ["Basic_income"]
+      - canonical: "Future_of_work"
+        aliases: []
+
+# Filtering rules applied during ingest:
+#   - keep lines starting with "en " (English desktop) OR "en.m " (English mobile)
+#   - SUM en + en.m into a single daily "en_total" count
+#   - drop all other languages and projects (en.wikibooks, en.zero, etc.)
+#   - case-sensitive title match against (canonical ∪ aliases) for all groups
