@@ -4,8 +4,8 @@
 #SBATCH --account=macs30113
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=28
-#SBATCH --mem=32G
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16G
 #SBATCH --time=04:00:00
 #SBATCH --output=slurm/logs/ingest_%j.out
 #SBATCH --error=slurm/logs/ingest_%j.err
@@ -76,7 +76,7 @@ python ingest/ingest_pageviews.py \
     --end   2026-05-01 \
     --staging "$STAGING_DIR" \
     --articles config/articles.yaml \
-    --workers "$SLURM_CPUS_PER_TASK"
+    --workers 4
 
 echo ""
 echo "===== job ended $(date) ====="

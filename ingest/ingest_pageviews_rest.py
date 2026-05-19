@@ -32,6 +32,7 @@ import random
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from multiprocessing import Pool
@@ -91,7 +92,7 @@ def fetch_article(args):
 
     time.sleep(random.uniform(0, 1.0))
 
-    url = REST_URL.format(title=title, start=start_yyyymmdd, end=end_yyyymmdd)
+    url = REST_URL.format(title=urllib.parse.quote(title, safe=""), start=start_yyyymmdd, end=end_yyyymmdd)
     try:
         data = _do_request(url)
         items = data.get("items", [])

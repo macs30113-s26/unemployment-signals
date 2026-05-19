@@ -4,8 +4,10 @@ import io
 import json
 import logging
 import os
+import random
 import sys
 import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta
 from multiprocessing import Pool, cpu_count
@@ -18,13 +20,13 @@ _URL_FMT = (
     "{y:04d}/{y:04d}-{m:02d}/pageviews-{y:04d}{m:02d}{d:02d}-{h:02d}0000.gz"
 )
 
-_TITLE_INDEX: dict[str, tuple[str, str]] | None = None
-_STAGING_DIR: Path | None = None
+_TITLE_INDEX: "dict | None" = None
+_STAGING_DIR: "Path | None" = None
 
 
-def _build_index(articles_yaml: Path) -> dict[str, tuple[str, str]]:
+def _build_index(articles_yaml: Path) -> dict:
     config = yaml.safe_load(articles_yaml.read_text())
-    index: dict[str, tuple[str, str]] = {}
+    index = {}
     for group_name, group_def in config["groups"].items():
         for entry in group_def["articles"]:
             canonical = entry["canonical"]
@@ -50,7 +52,7 @@ def _output_path(staging_dir: Path, y: int, m: int, d: int, h: int) -> Path:
     )
 
 
-def process_hour(target: tuple[int, int, int, int]) -> dict:
+def process_hour(target):
     y, m, d, h = target
     out_path = _output_path(_STAGING_DIR, y, m, d, h)
 
@@ -59,71 +61,95 @@ def process_hour(target: tuple[int, int, int, int]) -> dict:
 
     url = _URL_FMT.format(y=y, m=m, d=d, h=h)
     t0 = time.time()
-    try:
-        req = urllib.request.Request(
-            url, headers={"User-Agent": "lsc4ss-final-project/1.0"}
-        )
-        rows: list[dict] = []
-        capture_end = datetime(y, m, d, h, 0, 0).isoformat()
 
-        with urllib.request.urlopen(req, timeout=120) as response:
-            with gzip.GzipFile(fileobj=response) as gz:
-                for raw_line in gz:
-                    try:
-                        line = raw_line.decode("latin-1")
-                    except Exception:
-                        continue
-                    if not (line.startswith("en ") or line.startswith("en.m ")):
-                        continue
-                    parts = line.split(" ")
-                    if len(parts) < 3:
-                        continue
-                    domain, title, count_str = parts[0], parts[1], parts[2]
-                    hit = _TITLE_INDEX.get(title)
-                    if hit is None:
-                        continue
-                    canonical, group = hit
-                    try:
-                        views = int(count_str)
-                    except ValueError:
-                        continue
-                    rows.append({
-                        "domain": domain,
-                        "raw_title": title,
-                        "canonical": canonical,
-                        "group": group,
-                        "views": views,
-                        "capture_end_utc": capture_end,
-                    })
+    time.sleep(random.uniform(0, 5.0))
 
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp_path = out_path.with_suffix(".jsonl.gz.tmp")
-        buf = io.BytesIO()
-        with gzip.GzipFile(fileobj=buf, mode="wb") as gz_out:
-            for r in rows:
-                gz_out.write((json.dumps(r) + "\n").encode("utf-8"))
-        tmp_path.write_bytes(buf.getvalue())
-        tmp_path.rename(out_path)
+    last_error = None
+    for attempt in range(6):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "lsc4ss-final-project/1.0 (yinyuanc@uchicago.edu)"},
+            )
+            rows = []
+            capture_end = datetime(y, m, d, h, 0, 0).isoformat()
 
-        return {
-            "ok": True,
-            "skipped": False,
-            "target": target,
-            "match_count": len(rows),
-            "elapsed_s": round(time.time() - t0, 2),
-        }
+            with urllib.request.urlopen(req, timeout=180) as response:
+                with gzip.GzipFile(fileobj=response) as gz:
+                    for raw_line in gz:
+                        try:
+                            line = raw_line.decode("latin-1")
+                        except Exception:
+                            continue
+                        if not (line.startswith("en ") or line.startswith("en.m ")):
+                            continue
+                        parts = line.split(" ")
+                        if len(parts) < 3:
+                            continue
+                        domain, title, count_str = parts[0], parts[1], parts[2]
+                        hit = _TITLE_INDEX.get(title)
+                        if hit is None:
+                            continue
+                        canonical, group = hit
+                        try:
+                            views = int(count_str)
+                        except ValueError:
+                            continue
+                        rows.append({
+                            "domain": domain,
+                            "raw_title": title,
+                            "canonical": canonical,
+                            "group": group,
+                            "views": views,
+                            "capture_end_utc": capture_end,
+                        })
 
-    except Exception as e:
-        return {
-            "ok": False,
-            "target": target,
-            "url": url,
-            "error": f"{type(e).__name__}: {e}",
-            "elapsed_s": round(time.time() - t0, 2),
-        }
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = out_path.with_suffix(".jsonl.gz.tmp")
+            buf = io.BytesIO()
+            with gzip.GzipFile(fileobj=buf, mode="wb") as gz_out:
+                for r in rows:
+                    gz_out.write((json.dumps(r) + "\n").encode("utf-8"))
+            tmp_path.write_bytes(buf.getvalue())
+            tmp_path.rename(out_path)
+
+            return {
+                "ok": True,
+                "skipped": False,
+                "target": target,
+                "match_count": len(rows),
+                "elapsed_s": round(time.time() - t0, 2),
+                "attempts": attempt + 1,
+            }
+
+        except urllib.error.HTTPError as e:
+            last_error = f"HTTPError: HTTP Error {e.code}: {e.reason}"
+            if e.code == 429:
+                wait = 5 * (2 ** attempt) + random.uniform(0, 5)
+                time.sleep(wait)
+                continue
+            elif e.code in (502, 503, 504):
+                wait = 2 * (2 ** attempt) + random.uniform(0, 3)
+                time.sleep(wait)
+                continue
+            else:
+                break
+        except Exception as e:
+            last_error = f"{type(e).__name__}: {e}"
+            wait = 2 * (2 ** attempt) + random.uniform(0, 3)
+            time.sleep(wait)
+            continue
+
+    return {
+        "ok": False,
+        "target": target,
+        "url": url,
+        "error": last_error or "unknown",
+        "elapsed_s": round(time.time() - t0, 2),
+    }
 
 
-def hour_iter(start: datetime, end: datetime):
+def hour_iter(start, end):
     cur = start
     while cur < end:
         yield cur.year, cur.month, cur.day, cur.hour
@@ -154,10 +180,8 @@ def main():
     targets = list(hour_iter(start, end))
     if args.max_targets:
         targets = targets[: args.max_targets]
-    log.info(
-        "window: %s -> %s, %d hourly targets, %d workers",
-        start, end, len(targets), args.workers,
-    )
+    log.info("window: %s -> %s, %d hourly targets, %d workers",
+             start, end, len(targets), args.workers)
 
     staging = Path(args.staging)
     staging.mkdir(parents=True, exist_ok=True)
@@ -179,11 +203,8 @@ def main():
             if not result["ok"]:
                 n_failed += 1
                 if n_failed <= 10:
-                    log.warning(
-                        "FAIL %s: %s",
-                        result["target"],
-                        result.get("error", "unknown"),
-                    )
+                    log.warning("FAIL %s: %s", result["target"],
+                                result.get("error", "unknown"))
             elif result.get("skipped"):
                 n_skipped += 1
             else:
@@ -201,10 +222,8 @@ def main():
                 )
 
     elapsed = time.time() - t_start
-    log.info(
-        "DONE in %.1fmin: %d done, %d skipped, %d failed, %d total matches",
-        elapsed / 60, n_done, n_skipped, n_failed, total_matches,
-    )
+    log.info("DONE in %.1fmin: %d done, %d skipped, %d failed, %d total matches",
+             elapsed / 60, n_done, n_skipped, n_failed, total_matches)
 
     if n_failed > max(10, len(targets) // 100):
         sys.exit(1)

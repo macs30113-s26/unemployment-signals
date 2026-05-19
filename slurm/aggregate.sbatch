@@ -49,7 +49,7 @@ module load spark/3.5.0 || module load spark/3.3 || {
 echo "python: $(which python)"
 which spark-submit 2>/dev/null || echo "no spark-submit binary; using python -m pyspark"
 
-STAGING_DIR="/scratch/midway3/$USER/wiki-attention/staging"
+STAGING_DIR="/scratch/midway3/$USER/wiki-attention/staging_rest"
 CURATED_DIR="/scratch/midway3/$USER/wiki-attention/curated"
 mkdir -p "$CURATED_DIR"
 

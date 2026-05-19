@@ -1,0 +1,5 @@
+group,best_lag_weeks,p_value
+core_unemployment,1,5.714956363755204e-11
+labour_market_stress,8,1.414949870328362e-68
+macro_insecurity,5,0.0008564938577372467
+tech_displacement,1,0.9940033531997965

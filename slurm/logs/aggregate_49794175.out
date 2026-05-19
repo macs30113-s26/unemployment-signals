@@ -1,0 +1,10 @@
+===== job started Tue May 19 01:27:29 CDT 2026 =====
+SLURM_JOB_ID: 49794175
+host:         midway3-0075.rcc.local
+
+no Spark module found; using pip-installed pyspark
+python: /software/python-anaconda-2022.05-el8-x86_64/bin/python
+/home/yinyuanc/.local/bin/spark-submit
+staging:  /scratch/midway3/yinyuanc/wiki-attention/staging_rest  (31 files)
+curated:  /scratch/midway3/yinyuanc/wiki-attention/curated
+

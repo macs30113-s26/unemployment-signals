@@ -1,0 +1,14 @@
+===== job started Tue May 19 00:52:10 CDT 2026 =====
+SLURM_JOB_ID:        49791901
+SLURM_JOB_NODELIST:  midway3-0022
+SLURM_CPUS_PER_TASK: 8
+host:                midway3-0022.rcc.local
+cwd:                 /home/yinyuanc/wiki-attention
+
+python: /software/python-anaconda-2022.05-el8-x86_64/bin/python
+Python 3.9.19
+staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+
+2026-05-19 00:52:30,304 [INFO] window: 2019-01-01 00:00:00 -> 2026-05-01 00:00:00, 64248 hourly targets, 4 workers
+2026-05-19 00:52:30,304 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-19 00:55:45,381 [INFO] progress 200/64248 (0.3%), 172 skipped, 0 failed, 1400 total matches, 1.0/s, ETA 1041min

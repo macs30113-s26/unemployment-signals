@@ -6,7 +6,6 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import pyarrow.parquet as pq
 import ruptures as rpt
 from statsmodels.tsa.stattools import grangercausalitytests
 
@@ -42,7 +41,7 @@ FRED_SERIES = {
 
 
 def load_pageviews(curated_dir: Path, grain: str = "weekly") -> pd.DataFrame:
-    df = pq.read_table(curated_dir / grain).to_pandas()
+    import glob; df = pd.concat([pd.read_csv(p) for p in glob.glob(str(curated_dir / grain / "year=*/part.csv"))], ignore_index=True)
     df["week_start"] = pd.to_datetime(df["period"])
     df = df.rename(columns={"group": "grp"})
     return df

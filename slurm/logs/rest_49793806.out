@@ -1,0 +1,39 @@
+===== job started Tue May 19 01:17:59 CDT 2026 =====
+SLURM_JOB_ID: 49793806
+host:         midway3-0030.rcc.local
+
+output dir: /scratch/midway3/yinyuanc/wiki-attention/staging_rest
+
+2026-05-19 01:18:26,008 [INFO] 31 articles, REST window 20190101 -> 20260501, 6 workers
+2026-05-19 01:18:26,722 [INFO] OK   Labor_force  2678 days  0.6s
+2026-05-19 01:18:26,825 [INFO] OK   Unemployment_benefits  2678 days  0.7s
+2026-05-19 01:18:26,906 [INFO] OK   Unemployment  2678 days  0.8s
+2026-05-19 01:18:27,127 [INFO] OK   Long-term_unemployment  2623 days  1.0s
+2026-05-19 01:18:27,262 [INFO] OK   Structural_unemployment  2678 days  0.4s
+2026-05-19 01:18:27,312 [INFO] OK   Unemployment_in_the_United_States  2678 days  1.2s
+2026-05-19 01:18:27,395 [INFO] OK   Bureau_of_Labor_Statistics  2678 days  1.3s
+2026-05-19 01:18:27,825 [INFO] OK   Frictional_unemployment  2678 days  1.1s
+2026-05-19 01:18:27,890 [INFO] OK   Job_hunting  2678 days  0.5s
+2026-05-19 01:18:28,054 [INFO] OK   Severance_package  2678 days  0.9s
+2026-05-19 01:18:28,088 [INFO] OK   Furlough  2678 days  0.8s
+2026-05-19 01:18:28,246 [INFO] OK   Layoff  2678 days  1.3s
+2026-05-19 01:18:28,474 [INFO] OK   Recession  2678 days  0.4s
+2026-05-19 01:18:28,556 [INFO] OK   WARN_Act  2677 days  1.2s
+2026-05-19 01:18:28,582 [INFO] OK   COVID-19_recession  2210 days  0.3s
+2026-05-19 01:18:28,808 [INFO] OK   Career_break  2678 days  0.9s
+2026-05-19 01:18:28,866 [INFO] OK   Inflation  2678 days  0.4s
+2026-05-19 01:18:28,919 [INFO] OK   Cost_of_living  2678 days  0.4s
+2026-05-19 01:18:29,017 [INFO] OK   Great_Recession  2678 days  0.9s
+2026-05-19 01:18:29,277 [INFO] OK   Personal_bankruptcy  2678 days  0.4s
+2026-05-19 01:18:29,344 [INFO] OK   Stagflation  2678 days  0.8s
+2026-05-19 01:18:29,482 [INFO] OK   Automation  2678 days  0.5s
+2026-05-19 01:18:29,958 [INFO] OK   Bankruptcy  2678 days  1.1s
+2026-05-19 01:18:30,158 [INFO] OK   Technological_unemployment  2678 days  1.2s
+2026-05-19 01:18:30,351 [INFO] OK   Artificial_intelligence  2678 days  1.1s
+2026-05-19 01:18:30,396 [INFO] OK   Large_language_model  1174 days  0.9s
+2026-05-19 01:18:30,543 [INFO] OK   Generative_artificial_intelligence  1145 days  1.1s
+2026-05-19 01:18:30,731 [INFO] OK   ChatGPT  1244 days  0.8s
+2026-05-19 01:18:31,034 [INFO] OK   Universal_basic_income  2678 days  0.9s
+2026-05-19 01:18:31,385 [INFO] OK   Future_of_work  1 days  1.0s
+2026-05-19 01:19:35,593 [WARNING] FAIL Résumé: failed after 5 retries: UnicodeEncodeError: 'ascii' codec can't encode character '\xe9' in position 83: ordinal not in range(128)
+2026-05-19 01:19:35,598 [INFO] DONE in 69.6s: 30 ok, 0 skipped, 1 failed, 72668 total day-records

@@ -1,0 +1,18 @@
+===== job started Tue May 19 00:35:55 CDT 2026 =====
+SLURM_JOB_ID:        49791029
+SLURM_JOB_NODELIST:  midway3-0035
+SLURM_CPUS_PER_TASK: 8
+host:                midway3-0035.rcc.local
+cwd:                 /home/yinyuanc/wiki-attention
+
+python: /software/python-anaconda-2022.05-el8-x86_64/bin/python
+Python 3.9.19
+staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+
+2026-05-19 00:36:26,040 [INFO] window: 2019-01-01 00:00:00 -> 2026-05-01 00:00:00, 64248 hourly targets, 8 workers
+2026-05-19 00:36:26,040 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-19 00:43:38,964 [WARNING] FAIL (2019, 1, 3, 9): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-19 00:43:52,276 [WARNING] FAIL (2019, 1, 2, 8): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-19 00:44:14,356 [WARNING] FAIL (2019, 1, 3, 0): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-19 00:49:05,650 [WARNING] FAIL (2019, 1, 5, 12): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-19 00:49:50,682 [WARNING] FAIL (2019, 1, 5, 17): HTTPError: HTTP Error 429: Too Many Requests

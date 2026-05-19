@@ -1,0 +1,55 @@
+===== job started Tue May 19 01:22:57 CDT 2026 =====
+SLURM_JOB_ID: 49793986
+host:         midway3-0030.rcc.local
+
+output dir: /scratch/midway3/yinyuanc/wiki-attention/staging_rest
+
+2026-05-19 01:23:02,815 [INFO] 31 articles, REST window 20190101 -> 20260501, 6 workers
+2026-05-19 01:23:02,827 [INFO] SKIP Unemployment (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Unemployment_in_the_United_States (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Long-term_unemployment (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Bureau_of_Labor_Statistics (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Labor_force (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Layoff (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Severance_package (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP WARN_Act (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Furlough (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Job_hunting (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Recession (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Frictional_unemployment (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Great_Recession (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Career_break (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Structural_unemployment (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP Inflation (already exists)
+2026-05-19 01:23:02,828 [INFO] SKIP COVID-19_recession (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Stagflation (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Bankruptcy (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Unemployment_benefits (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Personal_bankruptcy (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Cost_of_living (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Technological_unemployment (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Automation (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Artificial_intelligence (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Generative_artificial_intelligence (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Large_language_model (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Universal_basic_income (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP ChatGPT (already exists)
+2026-05-19 01:23:02,829 [INFO] SKIP Future_of_work (already exists)
+2026-05-19 01:23:03,837 [INFO] OK   Résumé  2678 days  1.0s
+2026-05-19 01:23:03,839 [INFO] DONE in 1.0s: 1 ok, 30 skipped, 0 failed, 2678 total day-records
+
+===== job ended Tue May 19 01:23:03 CDT 2026 =====
+Files produced:
+total 1858
+drwxrwxr-x 2 yinyuanc yinyuanc  4096 May 19 01:23 .
+drwxrwxr-x 4 yinyuanc yinyuanc  4096 May 19 01:18 ..
+-rw-rw-r-- 1 yinyuanc yinyuanc 16244 May 19 01:18 Artificial_intelligence.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 14412 May 19 01:18 Automation.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 14145 May 19 01:18 Bankruptcy.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 13274 May 19 01:18 Bureau_of_Labor_Statistics.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 11772 May 19 01:18 Career_break.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc  8407 May 19 01:18 ChatGPT.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 13144 May 19 01:18 Cost_of_living.jsonl.gz
+
+Total day-records across all articles:
+75346
