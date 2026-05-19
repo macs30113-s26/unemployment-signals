@@ -4,51 +4,43 @@ from pyspark.sql import SparkSession, functions as F
 from pyspark.sql.types import StructType, StructField, StringType, LongType
 
 
-STAGING_SCHEMA = StructType([
-    StructField("domain", StringType(), nullable=True),
-    StructField("raw_title", StringType(), nullable=True),
+REST_SCHEMA = StructType([
     StructField("canonical", StringType(), nullable=True),
     StructField("group", StringType(), nullable=True),
+    StructField("date", StringType(), nullable=True),
     StructField("views", LongType(), nullable=True),
-    StructField("capture_end_utc", StringType(), nullable=True),
 ])
 
 
 def build_spark(app_name: str) -> SparkSession:
     return (
         SparkSession.builder.appName(app_name)
-        .config("spark.sql.files.maxPartitionBytes", "256m")
-        .config("spark.sql.files.openCostInBytes", "16m")
-        .config("spark.sql.shuffle.partitions", "32")
-        .config("spark.driver.memory", "16g")
+        .config("spark.sql.shuffle.partitions", "16")
+        .config("spark.driver.memory", "4g")
         .config("spark.sql.parquet.compression.codec", "snappy")
         .getOrCreate()
     )
 
 
-def read_staging(spark: SparkSession, staging_dir: str):
+def read_rest(spark, staging_dir):
     return (
         spark.read.option("compression", "gzip")
-        .schema(STAGING_SCHEMA)
-        .json(f"{staging_dir}/year=*/month=*/day=*/hour=*.jsonl.gz")
+        .schema(REST_SCHEMA)
+        .json(f"{staging_dir}/*.jsonl.gz")
     )
 
 
 def with_calendar_columns(df):
-    # capture_end_utc is the END of the hour per Wikimedia convention,
-    # so attribute pageviews to the date of (end - 1h)
-    cap_end_ts = F.to_timestamp("capture_end_utc")
-    start = cap_end_ts - F.expr("INTERVAL 1 HOUR")
+    date_col = F.to_date("date")
     return (
-        df.withColumn("capture_start_utc", start)
-        .withColumn("date", F.to_date(start))
-        .withColumn("week_start", F.date_trunc("week", start).cast("date"))
-        .withColumn("month", F.date_trunc("month", start).cast("date"))
-        .withColumn("year", F.year(start))
+        df.withColumn("date", date_col)
+        .withColumn("week_start", F.date_trunc("week", date_col).cast("date"))
+        .withColumn("month", F.date_trunc("month", date_col).cast("date"))
+        .withColumn("year", F.year(date_col))
     )
 
 
-def aggregate(df, grain_col: str):
+def aggregate(df, grain_col):
     return (
         df.groupBy(grain_col, "canonical", "group", "year")
         .agg(F.sum("views").alias("views"))
@@ -56,7 +48,7 @@ def aggregate(df, grain_col: str):
     )
 
 
-def write_curated(agg_df, output_dir: str):
+def write_curated(agg_df, output_dir):
     (
         agg_df.repartition("year")
         .write.mode("overwrite")
@@ -67,14 +59,15 @@ def write_curated(agg_df, output_dir: str):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--staging", required=True)
+    ap.add_argument("--staging", required=True,
+                    help="REST staging dir with per-article JSONL.gz files")
     ap.add_argument("--curated", required=True)
     args = ap.parse_args()
 
     spark = build_spark("wiki-attention-aggregate")
     spark.sparkContext.setLogLevel("WARN")
 
-    df = read_staging(spark, args.staging)
+    df = read_rest(spark, args.staging)
     enriched = with_calendar_columns(df).cache()
 
     n = enriched.count()
