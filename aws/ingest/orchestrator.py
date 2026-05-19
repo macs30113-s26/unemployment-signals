@@ -23,8 +23,9 @@ AWS credentials configured. Expects:
   - articles.yaml has been uploaded to s3://$BUCKET/config/articles.yaml.
 
 Usage:
-  python orchestrator.py --start 2019-01-01 --end 2026-05-01 \
-      --bucket my-bucket --concurrency 40 --function pageview-ingest
+  python orchestrator.py --start 2024-01-01 --end 2026-05-01 \
+      --bucket my-bucket --concurrency 8 --dispatch-batch 2000 \
+      --head-fallback --function pageview-ingest
 """
 
 import argparse
@@ -48,15 +49,55 @@ def hour_iter(start: datetime, end: datetime):
         cur += timedelta(hours=1)
 
 
-def already_done(bucket: str, prefix: str) -> set[tuple[int, int, int, int]]:
+def already_done(bucket: str, prefix: str, fallback_head: bool = False,
+                 targets: list[tuple[int, int, int, int]] | None = None
+                 ) -> set[tuple[int, int, int, int]]:
     """List S3 staging prefix and return the set of (y,m,d,h) already written.
 
     Lets re-runs be cheap: we only invoke Lambda for hours that don't already
-    have a Parquet file. Crucial for resilience — if the orchestrator dies
+    have an output file. Crucial for resilience — if the orchestrator dies
     halfway, we resume without paying twice.
+
+    `fallback_head=True` uses one `HEAD_object` per target instead of a single
+    `ListObjectsV2`. This is dramatically slower (one HTTP request per hour
+    instead of one per 1000 keys) but works in environments where the lab
+    role has an explicit-deny on s3:ListBucket — which is the case in some
+    AWS Academy Learner Lab variants.
     """
     s3 = boto3.client("s3")
     done: set[tuple[int, int, int, int]] = set()
+
+    if fallback_head:
+        if not targets:
+            return done
+        # HEAD each target key. We use a threadpool because per-call latency
+        # dominates throughput — sequential HEADs at 50ms each across 65k
+        # objects would take an hour; with 32 threads it's ~2 minutes.
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        def head_one(t):
+            y, m, d, h = t
+            key = (
+                f"{prefix.rstrip('/')}"
+                f"/year={y:04d}/month={m:02d}/day={d:02d}/hour={h:02d}.jsonl.gz"
+            )
+            try:
+                s3.head_object(Bucket=bucket, Key=key)
+                return t
+            except Exception:
+                return None
+
+        with ThreadPoolExecutor(max_workers=32) as pool:
+            futures = [pool.submit(head_one, t) for t in targets]
+            for i, fut in enumerate(as_completed(futures), 1):
+                r = fut.result()
+                if r is not None:
+                    done.add(r)
+                if i % 5000 == 0:
+                    print(f"  HEAD-checked {i}/{len(targets)}, {len(done)} found")
+        return done
+
+    # Normal path: paginated ListObjectsV2
     token = None
     while True:
         kwargs = {"Bucket": bucket, "Prefix": prefix.rstrip("/") + "/"}
@@ -129,13 +170,44 @@ def main():
     ap.add_argument("--bucket", required=True)
     ap.add_argument("--staging-prefix", default="staging")
     ap.add_argument("--function", default="pageview-ingest")
-    ap.add_argument("--concurrency", type=int, default=40,
-                    help="Client-side dispatch concurrency. Lambda's own "
-                         "reserved concurrency caps actual parallelism.")
-    ap.add_argument("--max-rounds", type=int, default=3,
-                    help="How many passes to make filling in S3 gaps.")
+    ap.add_argument("--concurrency", type=int, default=8,
+                    help="Client-side dispatch concurrency. AWS Academy "
+                         "Learner Lab caps concurrent Lambda executions at "
+                         "10 — exceeding this triggers lab deactivation. "
+                         "Default 8 leaves headroom for retries. Hard "
+                         "ceiling of 10 enforced.")
+    ap.add_argument("--max-rounds", type=int, default=50,
+                    help="How many passes to make filling in S3 gaps. With "
+                         "default --dispatch-batch 2000 and a 7-year window "
+                         "(~65k hours), ~33 rounds cover the full set. "
+                         "Set higher for resilience to failed rounds.")
+    ap.add_argument("--head-fallback", action="store_true",
+                    help="Use s3:HeadObject per target instead of "
+                         "s3:ListObjectsV2. Slower but works under the "
+                         "explicit-deny on ListBucket that some AWS "
+                         "Academy Learner Lab variants apply.")
+    ap.add_argument("--dispatch-batch", type=int, default=2000,
+                    help="Hours per round. At concurrency 8 and ~3s/file, "
+                         "2000 invocations take ~12 minutes per round. "
+                         "Smaller batches = safer for the lab's abuse "
+                         "detector but slower wall-clock.")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
+
+    # Hard guardrail: AWS Academy Learner Lab limits concurrent Lambda
+    # executions to 10. Exceeding this triggered account deactivation on
+    # 2026-05-18 (see README §7). We refuse to run with concurrency > 10
+    # to prevent retriggering. Lower if you have an error budget concern;
+    # the TA recommends 3 for initial debugging.
+    LEARNER_LAB_CONCURRENCY_CAP = 10
+    if args.concurrency > LEARNER_LAB_CONCURRENCY_CAP:
+        sys.exit(
+            f"\nERROR: --concurrency={args.concurrency} exceeds the AWS Academy "
+            f"Learner Lab cap of {LEARNER_LAB_CONCURRENCY_CAP} concurrent "
+            f"Lambda executions. Exceeding this triggers lab deactivation.\n"
+            f"Use --concurrency {LEARNER_LAB_CONCURRENCY_CAP} or lower "
+            f"(the TA suggests 3 for debugging, 8 for steady-state runs).\n"
+        )
 
     start = datetime.strptime(args.start, "%Y-%m-%d")
     end = datetime.strptime(args.end, "%Y-%m-%d")
@@ -151,15 +223,26 @@ def main():
     )
 
     for round_idx in range(1, args.max_rounds + 1):
-        done = already_done(args.bucket, args.staging_prefix)
+        done = already_done(
+            args.bucket,
+            args.staging_prefix,
+            fallback_head=args.head_fallback,
+            targets=all_targets if args.head_fallback else None,
+        )
         pending = [(y, m, d, h) for (y, m, d, h) in all_targets if (y, m, d, h) not in done]
         print(f"\nRound {round_idx}: {len(done)} done, {len(pending)} pending")
 
         if not pending:
-            print("All hours have Parquet output in S3. Done.")
+            print("All hours have output in S3. Done.")
             break
 
-        payloads = [{"year": y, "month": m, "day": d, "hour": h} for (y, m, d, h) in pending]
+        # Take only `dispatch_batch` items per round. This caps the simultaneous
+        # in-flight Lambda count and is the change that fixes the lab-deactivation
+        # incident we hit on 2026-05-17: bursting 65k async invocations in one
+        # shot triggered AWS Academy's abuse heuristic. Smaller, slower rounds
+        # are safer in this environment.
+        batch = pending[: args.dispatch_batch]
+        payloads = [{"year": y, "month": m, "day": d, "hour": h} for (y, m, d, h) in batch]
 
         if args.dry_run:
             print("--dry-run set; would invoke", len(payloads), "Lambdas. First 3:")
@@ -175,11 +258,13 @@ def main():
               f"({rate:.0f}/sec), {failures} client-side errors")
 
         if round_idx < args.max_rounds:
-            # Let Lambdas actually run. With ~40 concurrent invocations and
-            # ~3s per file, ~65k files take ~80 min wall clock for the first
-            # round. Round 2 onward should be much smaller (gap-filling only).
-            wait_s = 60 if pending and len(pending) < 1000 else 600
-            print(f"  sleeping {wait_s}s to let invocations complete...")
+            # Sleep proportional to batch size: 5000 invocations at concurrency 20
+            # = ~250 batches of 1 in flight × ~3s each = ~12 min in-flight.
+            # We sleep 5 minutes to give plenty of time without burning the
+            # 4-hour Learner Lab session window.
+            wait_s = 300
+            print(f"  sleeping {wait_s}s to let invocations complete "
+                  f"({len(pending) - len(batch)} hours still pending)...")
             time.sleep(wait_s)
 
 

@@ -1,0 +1,18 @@
+# Python deps needed in the user pip env on Midway3.
+# Most of these come from the rcc anaconda module already, but we list them
+# so the README is self-contained and the env is reproducible.
+
+# Ingest (minimal — pyyaml is the only non-stdlib dep)
+pyyaml==6.0.1
+requests==2.32.3
+
+# Aggregate (Spark)
+pyspark==3.5.1
+pyarrow==15.0.2
+
+# Analyze (small-data stats)
+pandas==2.2.2
+numpy==1.26.4
+matplotlib==3.9.0
+statsmodels==0.14.2
+ruptures==1.1.9
