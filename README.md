@@ -65,9 +65,9 @@ This two-tier design preserves the demonstration of distributed file processing 
   └────────┬───────────┘             │                      │
            │                         ▼                      │
            ▼                ┌────────────────────┐          │
-  /scratch/.../curated     │ Layer 2′ VALIDATE  │          │
-   {daily,weekly,monthly}/ │ validate_dump_vs_  │          │
-    year=YYYY/part.csv     │ rest.py            │          │
+  /scratch/.../curated      │ Layer 2′ VALIDATE  │          │
+   {daily,weekly,monthly}/  │ validate_dump_vs_  │          │
+    year=YYYY/part.csv      │ rest.py            │          │
            │                └─────────┬──────────┘          │
            │                          │                     │
            │                          ▼                     │
