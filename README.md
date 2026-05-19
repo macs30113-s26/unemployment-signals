@@ -1,8 +1,7 @@
 # Public Attention to Unemployment and Economic Insecurity: A Large-Scale Analysis of Wikipedia Pageviews (2019–2026)
 
-**LSC4SS Final Project — Solo project.**
 **Author:** *Yinyuan Chen*
-**Course:** Large-Scale Computing for the Social Sciences, Spring 2026
+**Course:** MACS30113 Large-Scale Computing for the Social Sciences, Spring 2026
 **Platform:** UChicago RCC Midway3 cluster (Slurm scheduler, caslake partition)
 
 ---
