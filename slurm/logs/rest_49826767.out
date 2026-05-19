@@ -1,0 +1,55 @@
+===== job started Tue May 19 12:55:45 CDT 2026 =====
+SLURM_JOB_ID: 49826767
+host:         midway3-0001.rcc.local
+
+output dir: /scratch/midway3/yinyuanc/wiki-attention/staging_rest
+
+2026-05-19 12:56:03,267 [INFO] 31 articles, REST window 20190101 -> 20260501, 6 workers
+2026-05-19 12:56:03,643 [INFO] OK   Unemployment_in_the_United_States  2678 days  0.4s
+2026-05-19 12:56:03,726 [INFO] OK   Long-term_unemployment  2623 days  0.4s
+2026-05-19 12:56:03,816 [INFO] OK   Unemployment  2678 days  0.5s
+2026-05-19 12:56:03,968 [INFO] OK   Unemployment_benefits  2678 days  0.7s
+2026-05-19 12:56:04,220 [INFO] OK   Bureau_of_Labor_Statistics  2678 days  0.9s
+2026-05-19 12:56:04,358 [INFO] OK   Labor_force  2678 days  1.1s
+2026-05-19 12:56:04,472 [INFO] OK   Frictional_unemployment  2678 days  0.8s
+2026-05-19 12:56:04,575 [INFO] OK   Furlough  2678 days  0.3s
+2026-05-19 12:56:04,584 [INFO] OK   Structural_unemployment  2678 days  0.9s
+2026-05-19 12:56:05,185 [INFO] OK   Layoff  2678 days  1.4s
+2026-05-19 12:56:05,252 [INFO] OK   Résumé  2678 days  0.7s
+2026-05-19 12:56:05,286 [INFO] OK   Severance_package  2678 days  1.3s
+2026-05-19 12:56:05,386 [INFO] OK   WARN_Act  2677 days  1.0s
+2026-05-19 12:56:05,462 [INFO] OK   Job_hunting  2678 days  1.0s
+2026-05-19 12:56:05,628 [INFO] OK   Career_break  2678 days  1.0s
+2026-05-19 12:56:05,934 [INFO] OK   Great_Recession  2678 days  0.7s
+2026-05-19 12:56:05,938 [INFO] OK   Recession  2678 days  0.8s
+2026-05-19 12:56:05,981 [INFO] OK   COVID-19_recession  2210 days  0.7s
+2026-05-19 12:56:06,009 [INFO] OK   Cost_of_living  2678 days  0.6s
+2026-05-19 12:56:06,371 [INFO] OK   Stagflation  2678 days  0.7s
+2026-05-19 12:56:06,518 [INFO] OK   Automation  2678 days  0.5s
+2026-05-19 12:56:06,587 [INFO] OK   Inflation  2678 days  1.2s
+2026-05-19 12:56:06,727 [INFO] OK   Personal_bankruptcy  2678 days  0.8s
+2026-05-19 12:56:06,932 [INFO] OK   Generative_artificial_intelligence  1145 days  0.4s
+2026-05-19 12:56:07,068 [INFO] OK   Large_language_model  1174 days  0.5s
+2026-05-19 12:56:07,123 [INFO] OK   Technological_unemployment  2678 days  1.1s
+2026-05-19 12:56:07,168 [INFO] OK   Bankruptcy  2678 days  1.2s
+2026-05-19 12:56:07,265 [INFO] OK   Universal_basic_income  2678 days  0.3s
+2026-05-19 12:56:07,605 [INFO] OK   Artificial_intelligence  2678 days  1.2s
+2026-05-19 12:56:07,795 [INFO] OK   ChatGPT  1244 days  1.1s
+2026-05-19 12:56:08,075 [INFO] OK   Future_of_work  1 days  1.0s
+2026-05-19 12:56:08,078 [INFO] DONE in 4.8s: 31 ok, 0 skipped, 0 failed, 75346 total day-records
+
+===== job ended Tue May 19 12:56:08 CDT 2026 =====
+Files produced:
+total 194
+drwxrwxr-x 2 yinyuanc yinyuanc  4096 May 19 12:56 .
+drwxrwxr-x 6 yinyuanc yinyuanc  4096 May 19 12:55 ..
+-rw-rw-r-- 1 yinyuanc yinyuanc 15945 May 19 12:56 Artificial_intelligence.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 14058 May 19 12:56 Automation.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 13901 May 19 12:56 Bankruptcy.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 12923 May 19 12:56 Bureau_of_Labor_Statistics.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 11453 May 19 12:56 Career_break.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc  8384 May 19 12:56 ChatGPT.jsonl.gz
+-rw-rw-r-- 1 yinyuanc yinyuanc 12896 May 19 12:56 Cost_of_living.jsonl.gz
+
+Total day-records across all articles:
+75346

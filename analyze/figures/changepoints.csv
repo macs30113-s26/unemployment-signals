@@ -1,11 +1,12 @@
 group,break_date,nearest_shock,shock_offset_days
-core_unemployment,2020-07-13,COVID layoffs,-120
+core_unemployment,2020-06-08,COVID layoffs,-85
 core_unemployment,2021-05-24,Inflation peak,387
-core_unemployment,2024-05-13,Tech layoff wave,-479
+core_unemployment,2024-12-09,Tech layoff wave,-689
 labour_market_stress,2020-06-08,COVID layoffs,-85
 labour_market_stress,2021-04-19,COVID layoffs,-400
+labour_market_stress,2022-04-04,Inflation peak,72
 labour_market_stress,2024-05-13,Tech layoff wave,-479
-macro_insecurity,2022-02-28,Inflation peak,107
 macro_insecurity,2023-03-20,Tech layoff wave,-59
-macro_insecurity,2025-06-02,Tech layoff wave,-864
+macro_insecurity,2025-04-28,Tech layoff wave,-829
 tech_displacement,2022-12-05,ChatGPT launch,-5
+tech_displacement,2023-07-03,Tech layoff wave,-164

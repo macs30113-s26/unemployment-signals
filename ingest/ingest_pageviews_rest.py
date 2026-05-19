@@ -42,7 +42,7 @@ import yaml
 
 REST_URL = (
     "https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/"
-    "en.wikipedia/all-access/all-agents/"
+    "en.wikipedia/all-access/user/"
     "{title}/daily/{start}/{end}"
 )
 
