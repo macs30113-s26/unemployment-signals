@@ -1,26 +1,3 @@
-"""
-Cross-validate REST API daily aggregates against raw dump aggregates.
-
-Loads:
-  1. The REST-derived per-article daily counts from staging_rest/
-  2. The dump-derived hourly counts from staging/ (the ~340 hours that
-     were successfully fetched before we switched ingest strategies)
-
-For each (canonical, date) covered by BOTH sources, computes the
-percent disagreement between dump-aggregated daily total and the REST
-daily total. A clean validation should show:
-  - >95% of (canonical, date) pairs match within 5% relative error
-  - No systematic bias (mean diff ~0)
-
-Writes a one-page CSV report and a printed summary.
-
-Usage:
-    python aggregate/validate_dump_vs_rest.py \\
-        --dump  /scratch/midway3/$USER/wiki-attention/staging \\
-        --rest  /scratch/midway3/$USER/wiki-attention/staging_rest \\
-        --out   analyze/figures/dump_rest_validation.csv
-"""
-
 import argparse
 import gzip
 import json
