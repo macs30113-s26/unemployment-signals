@@ -1,0 +1,26 @@
+[probe] job 49895146 started at 2026-05-20T14:51:08-05:00 on midway3-0017.rcc.local
+[probe] account=macs30113 partition=caslake cpus=4
+[probe] window: 2023-04-01 .. 2023-04-09 (exclusive), workers=4
+[probe] staging: /scratch/midway3/yinyuanc/wiki-attention/staging
+[probe] pre-run dump file count: 353
+2026-05-20 14:51:09,166 [INFO] window: 2023-04-01 00:00:00 -> 2023-04-09 00:00:00, 192 hourly targets, 4 workers
+2026-05-20 14:51:09,166 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 14:53:27,273 [INFO] progress 20/192 (10.4%), 0 skipped, 0 failed, 1066 total matches, 0.1/s, ETA 20min
+2026-05-20 14:55:01,233 [INFO] progress 40/192 (20.8%), 0 skipped, 0 failed, 2121 total matches, 0.2/s, ETA 15min
+2026-05-20 14:56:50,101 [INFO] progress 60/192 (31.2%), 0 skipped, 0 failed, 3214 total matches, 0.2/s, ETA 13min
+2026-05-20 14:58:00,199 [WARNING] FAIL (2023, 4, 2, 4): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 14:58:00,200 [INFO] progress 80/192 (41.7%), 0 skipped, 1 failed, 4249 total matches, 0.2/s, ETA 10min
+2026-05-20 14:59:46,911 [INFO] progress 100/192 (52.1%), 0 skipped, 1 failed, 5371 total matches, 0.2/s, ETA 8min
+2026-05-20 15:00:28,880 [INFO] progress 120/192 (62.5%), 0 skipped, 1 failed, 6456 total matches, 0.2/s, ETA 6min
+2026-05-20 15:02:20,418 [INFO] progress 140/192 (72.9%), 0 skipped, 1 failed, 7545 total matches, 0.2/s, ETA 4min
+2026-05-20 15:03:49,392 [INFO] progress 160/192 (83.3%), 0 skipped, 1 failed, 8592 total matches, 0.2/s, ETA 3min
+2026-05-20 15:05:48,105 [WARNING] FAIL (2023, 4, 5, 19): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 15:05:48,106 [INFO] progress 180/192 (93.8%), 0 skipped, 2 failed, 9634 total matches, 0.2/s, ETA 1min
+2026-05-20 15:05:50,398 [INFO] DONE in 14.7min: 192 done, 0 skipped, 2 failed, 10274 total matches
+[probe] ingester exit code: 0
+[probe] wall time: 882s
+[probe] post-run dump file count: 543
+[probe] post-run dump total size: 333K
+[probe] files in target window 2023-04:
+190
+[probe] DONE at 2026-05-20T15:05:50-05:00

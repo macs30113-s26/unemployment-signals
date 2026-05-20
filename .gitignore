@@ -21,3 +21,6 @@ credentials
 
 # OS
 .DS_Store
+
+# Dask worker logs (per-run, not stable artifacts; scheduler log is enough)
+logs/dask/
