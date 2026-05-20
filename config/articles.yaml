@@ -101,6 +101,9 @@ groups:
         aliases: []
       - canonical: "Universal_basic_income"
         aliases: ["Basic_income"]
+      # Future_of_work: retained in initial query list but excluded
+      # from substantive interpretation in README §5.5 — only 1
+      # non-zero week of REST data across the 7-year window.
       - canonical: "Future_of_work"
         aliases: []
 

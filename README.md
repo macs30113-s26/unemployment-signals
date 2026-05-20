@@ -207,17 +207,28 @@ python analyze/analyze_robustness.py --curated <...> --out-dir analyze/figures
 
 ## 9. Slurm Job IDs
 
-| Stage                       | Job ID    | Wall-clock | Status                       | Notes |
-|-----------------------------|-----------|------------|------------------------------|-------|
-| Dump ingest (28-worker)     | 49788236  | 4.5 min    | COMPLETED, 99% HTTP-failed   | §7.2 |
-| Dump ingest (8-worker)      | 49791029  | ~13 min    | CANCELLED                    | §7.2 |
-| Dump ingest (4-worker)      | 49791901  | ~7 min     | CANCELLED                    | §7.2 |
-| REST ingest (all-agents)    | 49793806  | 69 s       | COMPLETED                    | 30/31, Résumé URL-encoding bug |
-| REST ingest (all-agents v2) | 49793986  | ~10 s      | COMPLETED                    | All 31 |
-| Spark aggregate             | 49794175  | 56 s       | **FAILED**                   | §7.3, JAVA_HOME unset |
-| **REST ingest (user-only, final)** | **49826767** | **70 s** | **COMPLETED**           | Final dataset (§10.1) |
+### Final pipeline (the run whose output produces the figures and CSVs in this repo)
 
-All logs committed under `slurm/logs/`.
+| Stage              | Job ID       | Wall-clock | Status         | Output            |
+|--------------------|--------------|------------|----------------|-------------------|
+| REST ingest (user) | **49826767** | 70 s       | **COMPLETED**  | `staging_rest/` → 75,346 day-records that feed everything downstream |
+
+Post-ingest steps (`aggregate_pandas.py`, `analyze.py`, `analyze_robustness.py`) ran interactively on a sinteractive node rather than via `sbatch`: the post-ingest data volume is 75k rows / ~3 MB in memory, so pandas finishes the aggregation in ~5 seconds and the analysis in ~30 seconds, and a separate Slurm submission for each would be ceremonial. The decision is described honestly in §7.3 and §4.4 rather than papered over with cosmetic sbatch wrappers.
+
+### Diagnostic / failed runs (architecture-evolution evidence)
+
+These are not part of the final pipeline; they document the engineering pivots in §7.
+
+| Stage                       | Job ID   | Wall-clock | Status                       | Notes |
+|-----------------------------|----------|------------|------------------------------|-------|
+| Dump ingest (28-worker)     | 49788236 | 4.5 min    | COMPLETED, 99% HTTP-failed   | First dump attempt — §7.2 |
+| Dump ingest (8-worker)      | 49791029 | ~13 min    | CANCELLED                    | 429s persisted at lower concurrency — §7.2 |
+| Dump ingest (4-worker)      | 49791901 | ~7 min     | CANCELLED                    | Throughput plateau at 13/min — §7.2 |
+| REST ingest (all-agents)    | 49793806 | 69 s       | COMPLETED                    | Superseded by 49826767 (agent filter change) |
+| REST ingest (all-agents v2) | 49793986 | ~10 s      | COMPLETED                    | Superseded by 49826767 |
+| Spark aggregate             | 49794175 | 56 s       | **FAILED**                   | JAVA_HOME unset — §7.3 |
+
+All stdout/stderr from these jobs are committed under `slurm/logs/`.
 
 ## 10. Known Limitations
 
