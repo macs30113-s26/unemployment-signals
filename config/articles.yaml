@@ -2,8 +2,10 @@
 #
 # All titles are EXACT Wikipedia article titles as of 2026 with underscores instead of spaces.
 # A title that has been moved/renamed appears in both `canonical` (current title) and
-# `aliases` (historical redirects). The aggregation job resolves aliases to canonical
-# titles before producing the final panel.
+# `aliases` (historical redirects). Aliases are consumed by the RAW-DUMP validation
+# path (`ingest/ingest_pageviews.py`), which scans the full pageview dumps and merges
+# alias hits into the canonical row. The REST PRIMARY path (`ingest/ingest_pageviews_rest.py`)
+# queries each canonical title directly and does NOT merge aliases — see README §10.3.
 #
 # Source for canonical titles: en.wikipedia.org (manually verified). Aliases come from
 # the Wikipedia REST API redirect endpoint and a small manual list of well-known

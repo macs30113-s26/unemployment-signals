@@ -1,0 +1,5 @@
+group,all_agents_total_views,user_only_total_views,user_retention_pct,bot_share_pct
+core_unemployment,7088691,5199813,73.4,26.6
+labour_market_stress,9016164,7553893,83.8,16.2
+macro_insecurity,26163662,21289101,81.4,18.6
+tech_displacement,210661485,169442796,80.4,19.6
