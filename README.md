@@ -92,7 +92,7 @@ Z-scored attention overlaid on the BLS unemployment rate. Around the 2020 shock,
 
 ### 5.3 Granger predictive lead (not structural causation)
 
-We run lag-VAR Granger tests on first-differenced log-weekly attention vs. first-differenced log-initial-jobless-claims, scanning lags 1–8 and reporting the best (smallest p) lag per group. The "best lag" reporting is exploratory and not corrected for the multiple-testing implied by lag selection; the p-values below should be read as descriptive evidence of *temporal precedence* under linear forecasting, not as confirmatory tests.
+We run lag-VAR Granger tests on first-differenced raw weekly attention vs. first-differenced raw initial-jobless-claims (no log transform applied — see §10.5), scanning lags 1–8 and reporting the best (smallest p) lag per group. The "best lag" reporting is exploratory and not corrected for the multiple-testing implied by lag selection; the p-values below should be read as descriptive evidence of *temporal precedence* under linear forecasting, not as confirmatory tests.
 
 | group                  | best lag (weeks) | p-value     |
 |------------------------|------------------|-------------|
@@ -229,7 +229,7 @@ All logs committed under `slurm/logs/`.
 
 **10.4 Construct validity of `tech_displacement`.** §5.5 shows that the group is dominated by AI-product attention (ChatGPT alone is 83% post-2023) rather than labour-displacement anxiety. A cleaner future operationalisation would require either a narrower article list (e.g., `Technological_unemployment` only) or a sentiment-weighted measure.
 
-**10.5 Granger predictability ≠ causation.** §5.3 is a forecast-improvement test on first-differenced series. We select the best-of-8 lags per group and do not correct for multiple comparisons; treat the p-values as descriptive evidence of temporal precedence, not as confirmatory tests of causal structure. The 2020 COVID shock plausibly drives both Wikipedia attention *and* jobless claims, so a common-shock confound cannot be ruled out without an instrument.
+**10.5 Granger predictability ≠ causation.** §5.3 is a forecast-improvement test on first-differenced series. We select the best-of-8 lags per group and do not correct for multiple comparisons; treat the p-values as descriptive evidence of temporal precedence, not as confirmatory tests of causal structure. The 2020 COVID shock plausibly drives both Wikipedia attention *and* jobless claims, so a common-shock confound cannot be ruled out without an instrument. Additionally, the code applies `.diff()` to raw counts rather than to log-counts. Because pageview series are right-skewed and span several orders of magnitude (COVID spikes are ~10× baseline), the COVID 2020 segment dominates the first-difference variance and may inflate the apparent significance. A log-transformed first difference would be the more defensible specification and is left for future work.
 
 **10.6 No formal lead-lag analysis in figures.** §5.2 reports a *visual* lead of attention over UNRATE in the COVID period; we did not compute a formal cross-correlation or event-study window. A future version should.
 
