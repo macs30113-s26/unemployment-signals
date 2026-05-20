@@ -1,157 +1,145 @@
-# Public Attention to Unemployment and Economic Insecurity: A Large-Scale Analysis of Wikipedia Pageviews (2019–2026)
+# Public Attention to Unemployment and Economic Insecurity: A Wikipedia-Pageviews Analysis (2019–2026)
 
-**Author:** *Yinyuan Chen*
-**Course:** MACS30113 Large-Scale Computing for the Social Sciences, Spring 2026
-**Platform:** UChicago RCC Midway3 cluster (Slurm scheduler, caslake partition)
+**LSC4SS Final Project — Solo project.**
+**Author:** Yinyuan Chen
+**Course:** Large-Scale Computing for the Social Sciences, Spring 2026
+**Platform:** UChicago RCC Midway3 (Slurm, caslake partition)
+**Repo:** https://github.com/macs30113-s26/final-project-unemployment-signals
 
 ---
 
 ## 1. Research Question
 
-How did public attention to unemployment and related forms of economic insecurity change between 2019 and 2026, and how did that attention respond to four macro-economic shocks: the March-2020 pandemic layoff wave, the 2022 inflation surge, the November-2022 ChatGPT launch and subsequent generative-AI displacement discourse, and the 2023 tech-sector layoff cycle?
+How did public attention to unemployment and economic insecurity change between 2019 and 2026, and how did that attention respond to four macro-economic shocks: the March-2020 pandemic layoff wave, the 2022 inflation surge, the November-2022 ChatGPT launch, and the 2023 tech-sector layoff cycle?
 
-Three concrete hypotheses follow from this question:
+Wikipedia pageviews capture an *anxiety* channel — what people search when they are personally uncertain — that complements survey- and admin-data measures of unemployment (which capture realised behaviour with a publication lag). Three concrete hypotheses are tested:
 
-1. **Attention is a leading indicator of unemployment statistics.** Wikipedia pageviews on articles such as `Unemployment` or `Unemployment_benefits` should rise *before* the BLS reports a labour-market deterioration, because people look things up when they begin worrying — not after the official statistic is published.
-2. **Classical and technological unemployment trace different cycles.** Articles such as `Layoff` or `Recession` should correlate strongly with the unemployment rate, whereas articles such as `Technological_unemployment`, `Generative_artificial_intelligence`, or `ChatGPT` should be uncorrelated with traditional labour-market indicators and instead respond to AI-product news cycles.
-3. **The late-2022 generative-AI shock produces a structural break in technological-displacement attention that is absent from classical labour-market attention.** Bayesian changepoint detection on each thematic group should therefore find structural breaks at dates linked to the dominant shock for that group — pandemic dates for classical groups, ChatGPT-launch dates for tech-displacement.
+1. **H1 — Predictive lead.** Wikipedia attention on classical-unemployment articles temporally precedes the BLS initial-jobless-claims series.
+2. **H2 — Separation of channels.** AI / automation-themed articles do not show the same temporal precedence relative to jobless claims that classical articles do.
+3. **H3 (original) — AI-era structural break.** The 2022-11-30 ChatGPT launch produced a structural break in technological-displacement attention. *This hypothesis is revisited in §5.5 and rejected after a robustness check.*
 
-### Why this is a social-science problem
+## 2. Scope and Data Volume (Honest)
 
-Unemployment is normally studied through household surveys (BLS Current Population Survey) or administrative data (state UI filings). Both sources are slow (monthly or weekly publication lag), expensive (large sampling apparatus), and capture *behaviour* — who took an action — rather than *anxiety* — who was worried enough to inform themselves. Wikipedia pageviews capture the anxiety channel: they record what people search for when they are personally uncertain, which is a complementary signal that the existing labour-market literature largely lacks. The same logic underlies the Google Trends literature in economics (Choi & Varian, 2012), but Wikipedia has two advantages: (1) the corpus is curated and articles map cleanly to *concepts*, eliminating the keyword-ambiguity problem of Trends, and (2) raw hourly dumps are publicly archived with no rate limits at the per-file level, so the full dataset is reproducibly accessible.
+The pipeline operates in two ingest tiers and one analysis tier. What was *actually* processed:
 
-## 2. Why This Is Large-Scale Computing, Not a Pandas Script
+| Tier | Source | Records pulled |
+|------|--------|----------------|
+| Layer 1A — REST API (primary)       | Wikimedia REST `all-access/user` daily aggregates, 31 articles × 7 years | **75,346 day-records** |
+| Layer 1B — raw dumps (validation)   | Wikimedia hourly dumps, sampled                                       | 353 hourly files (~10 days) |
+| Layer 2 — pandas aggregation        | Daily → weekly → monthly rollup, year-partitioned CSV                 | 75k → 10,954 weekly rows |
+| Layer 3 — analysis                  | Granger lag-VAR + PELT changepoint + matplotlib                       | 383-week panel × 4 groups |
 
-The naive version of this analysis — "fetch 30 article-day-aggregate counts from the Wikimedia REST API and call it done" — would not justify large-scale tooling. The actual pipeline is more nuanced: it uses two parallel ingest paths and an HPC scheduler to deliver both speed *and* source-level validation.
+The Wikimedia hourly dump corpus is ~65,000 files (~3 TB compressed) for this window; the dump-pull code (`ingest/ingest_pageviews.py`) is structurally capable of pulling all of them, but we **did not** do so — Wikimedia rate-limited us aggressively (§7.2), and the REST API delivers the same per-article daily totals for the curated 31-article list in 70 seconds (job 49826767). The primary analysis is built on the REST data; the dump sample is used only for cross-source validation (§5.5).
 
-**The raw data volume that this pipeline is capable of processing.** The Wikimedia hourly pageview dumps (`dumps.wikimedia.org/other/pageviews/`) hold ~65,000 hourly files for the 2019-01-01 → 2026-05-01 window, ~50–80 MB compressed each, **~3 TB compressed / ~20 TB uncompressed in aggregate**. Each hourly file contains every article on every Wikimedia project — over 100 GB of titles per day — of which fewer than 30 lines are relevant to this analysis. A single-threaded download-and-filter on a laptop would take ~50 hours of wall-clock time, dominated by HTTP round-trip and gunzip throughput.
-
-**Two ingest tiers in the actual pipeline.** Confronted with the Wikimedia dumps server's aggressive per-IP rate limiting (see §7.2), we designed a **two-tier ingest strategy**:
-
-- **Primary tier (REST API)**: Wikimedia exposes a pre-aggregated daily-pageviews endpoint that delivers ~7 years × 31 articles × ~2,700 days = **~75,000 day-records in 70 seconds wall-clock**, parallelised with a 6-worker multiprocessing pool inside a single Slurm job. This is what the actual research analysis is built on.
-- **Validation tier (raw dump-pulling)**: The same Slurm-scheduled multiprocessing pool also pulled **353 random hourly raw-dump files** (~10 days of data) from `dumps.wikimedia.org`, against which the REST aggregates are cross-validated for source-level fidelity (`aggregate/validate_dump_vs_rest.py`).
-
-This two-tier design preserves the demonstration of distributed file processing (the dump-pulling layer is exactly the scalable-computing pattern: massively-parallel filtering at the leaf, idempotent atomic writes, exponential-backoff retry) while delivering the actual research dataset in minutes rather than days. The trade-off is documented as an engineering decision in §7.2.
+We do not claim TB-scale realised processing. The scalable-computing patterns demonstrated (§4) are real, but the dataset is small.
 
 ## 3. Architecture
 
 ```
-       Wikimedia                Wikimedia              FRED public CSV
-       REST API                dumps server             (BLS, ICSA)
-          │                         │                       │
-          │ 31 article-             │ ~350 hourly raw       │
-          │   requests              │   dump files          │
-          ▼                         ▼                       │
-  ┌──────────────────┐      ┌──────────────────┐            │
-  │ Layer 1A         │      │ Layer 1B         │            │
-  │ PRIMARY          │      │ VALIDATION       │            │
-  │ multiprocessing  │      │ multiprocessing  │            │
-  │  Pool(6)         │      │  Pool(4)         │            │
-  │ ingest_pageviews │      │ ingest_pageviews │            │
-  │  _rest.py        │      │  .py + backoff   │            │
-  │ via Slurm sbatch │      │ via Slurm sbatch │            │
-  └────────┬─────────┘      └────────┬─────────┘            │
-           │                         │                      │
-           ▼                         ▼                      │
-  /scratch/.../staging_rest   /scratch/.../staging          │
-   31 per-article.jsonl.gz   353 hourly.jsonl.gz            │
-   75,346 day-records        ~2,500 hour-records            │
-           │                         │                      │
-           ▼                         │                      │
-  ┌────────────────────┐             │                      │
-  │ Layer 2 AGG        │             │                      │
-  │ aggregate_pandas.py│             │                      │
-  └────────┬───────────┘             │                      │
-           │                         ▼                      │
-           ▼                ┌────────────────────┐          │
-  /scratch/.../curated      │ Layer 2′ VALIDATE  │          │
-   {daily,weekly,monthly}/  │ validate_dump_vs_  │          │
-    year=YYYY/part.csv      │ rest.py            │          │
-           │                └─────────┬──────────┘          │
-           │                          │                     │
-           │                          ▼                     │
-           │              dump_rest_validation.csv          │
-           │                                                │
-           ▼                                                │
-  ┌──────────────────────┐                                  │
-  │ Layer 3 ANALYZE      │◄─────────────────────────────────┘
-  │ analyze.py: Granger, │   joins FRED data
-  │ ruptures, matplotlib │
-  └────────┬─────────────┘
-           │
-           ▼
-  analyze/figures/
-   01_attention_by_group.png
-   02_attention_vs_unrate.png
-   granger_results.csv
-   changepoints.csv
+   Wikimedia REST       Wikimedia dumps      FRED public CSV
+        │                     │                     │
+        │ 31 articles         │ 353 hourly files    │
+        ▼                     ▼                     │
+   Layer 1A PRIMARY      Layer 1B VALIDATION        │
+   multiprocessing       multiprocessing            │
+   Pool(6), Slurm        Pool(4), Slurm, backoff    │
+        │                     │                     │
+        ▼                     ▼                     │
+   staging_rest/         staging/                   │
+   31 jsonl.gz           353 jsonl.gz               │
+        │                     │                     │
+        ▼                     │                     │
+   Layer 2 AGG               │                     │
+   aggregate_pandas.py        │                     │
+        │                     ▼                     │
+        ▼              validate_dump_vs_rest.py     │
+   curated/{daily,             │                    │
+   weekly,monthly}/            ▼                    │
+        │             dump_rest_validation.csv      │
+        ▼                                           │
+   Layer 3 ANALYZE  ◄──────────────────────────────┘
+   analyze.py + analyze_robustness.py
+        │
+        ▼
+   analyze/figures/  (3 PNG + 5 CSV)
 ```
 
-## 4. Scalability Discussion
+## 4. Scalable-Computing Patterns
 
-This section maps the pipeline against the *Level of Difficulty / scalable computing* rubric. Five distinct scalable-computing patterns are exercised:
+**4.1 Multiprocessing-based parallel HTTP ingest, two paths.** Both `ingest_pageviews_rest.py` (REST, 6 workers) and `ingest_pageviews.py` (raw dump, 4 workers with exponential backoff) use `multiprocessing.Pool` to fan out independent downloads. The REST path completes in 70 s; the dump path is the leaf-parallel pattern that would scale to the full corpus given an unrate-limited mirror — the bottleneck is upstream (§7.2), not parallelism.
 
-**4.1 Multiprocessing-based parallel HTTP ingest, on two paths.** Both the REST tier (`ingest_pageviews_rest.py`) and the dump tier (`ingest_pageviews.py`) use `multiprocessing.Pool` to fan out independent HTTP downloads. The dump tier processes one file per worker in ~3 seconds each (workload dominated by gunzip + filter); with 4 workers and exponential backoff against the Wikimedia rate limiter, the validation sample of 353 files completed in ~30 minutes of cumulative wall-clock across several Slurm submissions. The REST tier completes all 31 articles in ~70 seconds with 6 workers. The dump tier is what would scale, unchanged, to the full ~65,000-file corpus if a faster mirror were available — the algorithm is correct, the bottleneck is upstream rate limiting (§7.2).
+**4.2 Atomic-write idempotency.** Each worker writes to a `.tmp` file and renames after gzip flush; cancelled Slurm jobs (49791029, 49791901) left no partial-write poison. Subsequent submissions correctly skip completed files via `path.exists() + stat().st_size > 0`, making restarts cumulative.
 
-**4.2 Atomic-write idempotency for free re-runnability.** Each worker writes to a `.tmp` file and renames after a complete gzip flush. If a Slurm job is killed mid-batch — which happened when we cancelled the failing 8-worker dump-tier job (job 49791029) — partial writes can't poison the staging directory. The next run's `os.path.exists() + stat().st_size > 0` check correctly identifies which files are complete and skips them, making subsequent submissions cumulative.
+**4.3 Two-tier strategy under upstream rate-limiting.** When the dump server's per-IP cap made a full pull untenable (~80 h wall-clock at the only concurrency that did not trigger HTTP 429), we shifted the primary path to the REST API and kept the dump-pull as a validation sample. This is itself a scalable-computing decision: when the upstream resource is rate-limited rather than parallelism-limited, vertical workload reorganisation beats throwing more workers at the leaf.
 
-**4.3 Two-tier ingest as engineering strategy.** Recognising that the dump server's per-IP rate limit made a full 65,000-file pull untenable (~80 hours wall-clock on Midway3 even at 4 workers), we made the explicit engineering call to use the REST API for the primary analysis dataset and the dump pull for source-level validation. This *is* a scalable-computing decision: when the upstream resource is rate-limited rather than parallelism-limited, vertical workload reorganisation (use a pre-aggregated endpoint) beats throwing more workers at the leaf.
-
-**4.4 HPC scheduling under Slurm with job-id auditability.** Every meaningful run is a `sbatch` submission with stdout/stderr archived under `slurm/logs/`. The pipeline produced six Slurm jobs over its development (§9), each fully logged and reproducible. Job IDs survive in `sacct` queries indefinitely and the logs are committed to the repo.
-
-**4.5 Cross-source validation as a data-quality check.** With the dump tier completing 11 days of full 24-hour coverage, we cross-validate the REST aggregates against dump-aggregated daily counts per (article, day) tuple in `aggregate/validate_dump_vs_rest.py`. The validation reveals that REST consistently reports ~2× higher counts than the dumps — diagnosed in §5.5 as the access-type difference (`all-access` vs. `en` + `en.m`). This is reported as a known limitation in §10, not a bug: it is the kind of data-quality issue that only a multi-source ingest can detect.
+**4.4 HPC scheduling under Slurm with full job-id audit trail.** Every meaningful run is an `sbatch` submission. Seven Slurm job IDs (§9) span the project's life; all `stdout`/`stderr` are committed under `slurm/logs/`. The Spark aggregation was *attempted* (job 49794175) but **failed** at startup (JAVA_HOME unset on caslake); §7.3 explains why this was replaced with a pandas implementation rather than re-attempted with manual Spark setup.
 
 ## 5. Findings
 
-The pipeline produces two figures (`analyze/figures/`) and three result tables (granger, changepoints, dump-vs-rest validation). The findings strongly support all three hypotheses.
+All numbers come from the `all-access/user` REST data (excludes spider/bot traffic; see §10.1). Three figures and five CSV tables are committed under `analyze/figures/`.
 
-### 5.1 Per-group time series
+### 5.1 Group-level attention time series
 
 ![Attention by group](analyze/figures/01_attention_by_group.png)
 
-Four panels, each with the four shock dates annotated:
+Core_unemployment and labour_market_stress show their largest spike at the March-2020 COVID layoff wave and no visible response to the 2022 inflation surge. Macro_insecurity peaks instead at the 2022 inflation period. Tech_displacement shows a ~10× step change after late-2022, the source of which is investigated in §5.5.
 
-- **Core Unemployment** peaks sharply at the March-2020 COVID layoff wave, the single largest spike in the 7-year window. The 2022 inflation surge does *not* produce a visible response in this group — early evidence for hypothesis 2.
-- **Labour Market Stress** behaves nearly identically: huge COVID spike, near-baseline elsewhere, with mild 2024-2025 elevation suggesting renewed labour-market anxiety.
-- **Macro Insecurity** is the only group where the **2022 inflation peak generates the largest spike** — confirming that the "macro" thematic group correctly separates inflation-driven concern from unemployment-driven concern.
-- **Tech Displacement** shows the most dramatic structural change: a roughly 10× step-change up around the late-2022 ChatGPT launch, with a level shift that persists through 2024-2026. The pre-ChatGPT baseline is ~10⁵ weekly pageviews; the post-launch level is ~10⁶ — a one-order-of-magnitude regime change in approximately 2 months.
-
-### 5.2 Attention vs unemployment rate
+### 5.2 Attention vs UNRATE
 
 ![Attention vs UNRATE](analyze/figures/02_attention_vs_unrate.png)
 
-Z-scored attention overlaid on the BLS unemployment rate (also z-scored):
+Z-scored attention overlaid on the BLS unemployment rate. Around the 2020 shock, classical attention and UNRATE move together with attention appearing to lead UNRATE by a few weeks visually; we do not compute a formal lead-lag cross-correlation in this version. For tech_displacement, attention rises in 2023–2025 while UNRATE is falling — consistent with a news-cycle-driven attention pattern decoupled from realised labour-market movements.
 
-- For **core_unemployment** and **labour_market_stress**, attention and UNRATE move in tight synchrony during the COVID shock, with attention peaks visibly leading the UNRATE step-up by approximately 1–2 weeks.
-- For **tech_displacement**, the two series are fully decoupled: attention rises in 2023–2025 while UNRATE is *falling* — the kind of relationship one would expect from a labour-market concern driven by news-cycle speculation rather than realised job losses.
+### 5.3 Granger predictive lead (not structural causation)
 
-### 5.3 Granger causality (attention → initial jobless claims)
+We run lag-VAR Granger tests on first-differenced log-weekly attention vs. first-differenced log-initial-jobless-claims, scanning lags 1–8 and reporting the best (smallest p) lag per group. The "best lag" reporting is exploratory and not corrected for the multiple-testing implied by lag selection; the p-values below should be read as descriptive evidence of *temporal precedence* under linear forecasting, not as confirmatory tests.
 
 | group                  | best lag (weeks) | p-value     |
 |------------------------|------------------|-------------|
-| core_unemployment      | 1                | 5.7 × 10⁻¹¹ |
-| labour_market_stress   | 8                | 1.4 × 10⁻⁶⁸ |
-| macro_insecurity       | 5                | 8.6 × 10⁻⁴  |
-| tech_displacement      | 1                | 0.994       |
+| core_unemployment      | 1                | 3.5 × 10⁻¹⁵ |
+| labour_market_stress   | 8                | 2.4 × 10⁻⁷⁵ |
+| macro_insecurity       | 7                | 2.1 × 10⁻⁴  |
+| tech_displacement      | 1                | 0.970       |
 
-The three classical-economy groups all Granger-cause initial jobless claims at high statistical significance (p < 0.001 for all three), with best lags ranging from 1 to 8 weeks — supporting **hypothesis 1** that Wikipedia attention leads the official labour-market statistic. `tech_displacement` does not Granger-cause jobless claims (p = 0.994) — supporting **hypothesis 2** that AI-driven labour anxiety is decoupled from realised labour-market behaviour.
+The three classical groups all predictively precede jobless claims; tech_displacement does not. Consistent with H1 and H2; not a structural-causation claim.
 
-### 5.4 Changepoint detection
+### 5.4 PELT changepoint detection (not Bayesian)
 
-Using PELT changepoint detection on log-pageview series (table excerpted; full results in `analyze/figures/changepoints.csv`):
+Algorithm: `ruptures.Pelt(model="rbf")`, a frequentist exact-search algorithm with an RBF cost function. No posterior probabilities are computed. Offset convention: `offset_days = shock_date − break_date`; a negative offset means the break is *later* than the named shock.
 
-| group                | break date  | nearest known shock        | offset (days) |
+| group                | break date  | nearest shock              | offset (days) |
 |----------------------|-------------|----------------------------|---------------|
-| tech_displacement    | 2022-12-05  | **ChatGPT launch**         | **+5**        |
-| macro_insecurity     | 2022-02-28  | Inflation peak             | -107          |
-| labour_market_stress | 2020-06-08  | COVID layoffs              | -85           |
-| core_unemployment    | 2020-07-13  | COVID layoffs              | -120          |
+| tech_displacement    | 2022-12-05  | ChatGPT launch (2022-11-30) | −5            |
+| tech_displacement    | 2023-07-03  | Tech layoff wave            | −164          |
+| core_unemployment    | 2020-06-08  | COVID layoffs               | −85           |
+| labour_market_stress | 2020-06-08  | COVID layoffs               | −85           |
+| macro_insecurity     | 2023-03-20  | Tech layoff wave            | −59           |
 
-The `tech_displacement` group's largest structural break is detected at **2022-12-05 — five days after the public ChatGPT launch (2022-11-30)**. This is a striking quantitative confirmation of **hypothesis 3**: the AI-displacement narrative produces a measurable, dateable regime change in public attention. The classical groups' breaks are anchored to the COVID shock, but lagged by 1–4 months — likely because their *peak* attention was sharp and brief, with the algorithm picking the post-shock level rather than the spike date.
+Honest reading: only the `tech_displacement` 2022-12-05 break is within two weeks of its named shock. The classical-group breaks are detected ~3 months *after* COVID hit — PELT is picking the post-spike plateau, not the spike date itself. Calling these breaks "tightly aligned" with the named shocks would be overstating; they are temporally *associated* but not coincident.
 
-### 5.5 Dump-vs-REST cross-validation
+### 5.5 Robustness: the ChatGPT-aligned break is an article-creation artifact
 
-`aggregate/validate_dump_vs_rest.py` cross-checks 288 (article, date) records that have both REST aggregates and 24-hour-complete dump coverage. We find systematic disagreement: dump counts are roughly **half** of REST counts for the same (article, date) pair, with median relative error ~12% and mean ~100%. This is **not a bug**: the REST endpoint queries `all-access` traffic, which includes mobile app, mobile web, and desktop; the dump pull we performed filters to `en` (desktop) + `en.m` (mobile web), excluding the mobile-app share. This is consistent with public Wikimedia statistics that show mobile-app traffic is now ~40-50% of total English-Wikipedia views. The cross-validation thus confirms the relative shape of the time series across sources while documenting an absolute-level offset that is now a known limitation (§10).
+Coverage check (`tech_article_coverage.csv`): three of the eight `tech_displacement` articles — `ChatGPT`, `Generative_artificial_intelligence`, `Large_language_model` — did not exist on Wikipedia before late 2022, and `Future_of_work` has only one non-zero week in the panel and should be considered missing data. Re-running PELT on three article subsets:
+
+| Subset                                     | Articles | PELT break dates |
+|--------------------------------------------|----------|------------------|
+| ALL 8 articles                             | 8        | **2022-12-05**, 2023-07-03 |
+| EXCLUDE post-window-created                | 5        | 2020-02-24, 2021-06-28, 2022-08-22, 2024-05-13 |
+| LABOR-NARROW (Tech_unempl, Autom, UBI)     | 3        | 2020-06-08, 2020-09-21, 2021-05-24, 2024-05-13, 2025-04-28 |
+
+When the three mid-window-created articles are removed, **no ChatGPT-aligned break is detected**. The ChatGPT article alone accounts for **82.9% of tech_displacement attention since 2023-01-01**.
+
+![Article-level breakdown](analyze/figures/03_tech_articles_breakdown.png)
+
+**H3 is therefore rejected**: the +5-day "ChatGPT break" on the all-article series is mostly an artifact of three AI articles entering the panel in late 2022 / early 2023. The robust signal in `tech_displacement` reflects *AI-product attention* (driven by the ChatGPT article itself), not labour-displacement anxiety.
+
+### 5.6 Summary of hypotheses
+
+| Hypothesis | Verdict |
+|------------|---------|
+| H1 — classical attention predictively leads jobless claims | Consistent with the data (p < 10⁻³, all three classical groups) |
+| H2 — tech_displacement attention is decoupled from realised jobless claims | Consistent with the data (p = 0.97) |
+| H3 — ChatGPT launch caused a structural break in *labour-displacement anxiety* | **Rejected.** The break disappears once mid-window-created AI articles are removed, and ChatGPT alone contributes 83% of group attention post-2023. |
 
 ## 6. Repository Layout
 
@@ -159,125 +147,98 @@ The `tech_displacement` group's largest structural break is detected at **2022-1
 .
 ├── README.md
 ├── requirements.txt
-├── .gitignore
-├── config/
-│   └── articles.yaml                  31 canonical articles + 13 aliases, 4 groups
+├── config/articles.yaml            31 canonical articles + 13 aliases, 4 groups
 ├── ingest/
-│   ├── ingest_pageviews_rest.py       PRIMARY — Wikimedia REST API, multiprocessing
-│   ├── ingest_pageviews.py            VALIDATION — raw dump pull, multiprocessing + backoff
-│   └── verify_articles.py             Wikipedia API smoke check for titles + redirects
+│   ├── ingest_pageviews_rest.py    PRIMARY (REST, user-only)
+│   ├── ingest_pageviews.py         VALIDATION (raw dump pull)
+│   └── verify_articles.py
 ├── aggregate/
-│   ├── aggregate_pandas.py            pandas-based daily / weekly / monthly rollup
-│   ├── aggregate_pageviews.py         (PySpark version, retained — see §7.3)
-│   └── validate_dump_vs_rest.py       cross-source consistency check
+│   ├── aggregate_pandas.py         working aggregator
+│   ├── aggregate_pageviews.py      Spark version, attempted but failed (§7.3)
+│   └── validate_dump_vs_rest.py
 ├── analyze/
-│   ├── analyze.py                     Granger, ruptures, matplotlib
-│   └── figures/                       committed outputs
-│       ├── 01_attention_by_group.png
-│       ├── 02_attention_vs_unrate.png
-│       ├── granger_results.csv
-│       ├── changepoints.csv
-│       └── dump_rest_validation.csv
+│   ├── analyze.py                  Granger + PELT main
+│   ├── analyze_robustness.py       article-level / subset checks (§5.5)
+│   └── figures/                    3 PNG + 5 CSV, all committed
 ├── slurm/
-│   ├── ingest_rest.sbatch             PRIMARY ingest job
-│   ├── ingest.sbatch                  validation-tier dump pull
-│   ├── aggregate.sbatch               (Spark version, see §7.3)
-│   └── logs/                          stdout/stderr archive for each Slurm run
-├── docs/
-│   └── midway3_runbook.md             step-by-step reproducibility guide
-└── aws/                               archived AWS-Lambda fan-out attempt (see §7.1)
+│   ├── ingest_rest.sbatch / ingest.sbatch / aggregate.sbatch
+│   └── logs/                       13 Slurm log files committed
+├── docs/midway3_runbook.md         step-by-step bring-up guide
+└── aws/                            archived failed-AWS pipeline (§7.1, aws/README.md)
 ```
 
-## 7. Incidents and Engineering Decisions
+## 7. Incidents and Engineering Pivots
 
-The pipeline was redesigned twice during development in response to environment constraints. Both incidents are documented because they shaped the final architecture and demonstrate the project's engagement with scalable-computing trade-offs.
+### 7.1 Failed AWS Lambda pipeline
 
-### 7.1 Failed cloud pipeline (AWS Academy Learner Lab)
+The original cloud-fan-out architecture (AWS Lambda + S3 + Spark + Athena) is archived under `aws/` and **never completed an end-to-end run**. Two attempts triggered AWS Academy Learner Lab account deactivations:
 
-The original architecture targeted AWS Lambda fan-out for the ingest layer, on the reasoning that 65,000 embarrassingly-parallel HTTP downloads is a near-perfect fit for serverless. Two attempts at running the cloud pipeline triggered hard account deactivations in the AWS Academy Learner Lab environment used in this course:
+- Concurrency = 40: deactivated at ~12 minutes, $20.30 / $50 spent. Post-deactivation IAM included an `s3:ListBucket` explicit deny that prevented standard resume logic.
+- Concurrency = 8 (guardrail at 10): deactivated at ~29 minutes, $0 spent, 2,000 / 21,000 target hours pulled. The lab's per-account Lambda concurrency cap is 10; async retries appear to have transiently exceeded it.
 
-**Attempt 1 (`--concurrency 40`).** ~12 minutes into a full-window dispatch, the account was force-deactivated by the lab's automated controls. Cumulative spend was $20.30 of the $50 lab budget — well within the limit. The post-deactivation IAM state included an `s3:ListBucket` explicit-deny that prevented standard resume logic.
+The migration to Midway3 was the direct response. `aws/README.md` documents the archive.
 
-**Attempt 2 (`--concurrency 8`, with a hard guardrail refusing to start at concurrency > 10).** The account was deactivated after only 29 minutes of accumulated lab time, with budget at $0 of $50 used and ~2,000 of 21,000 target hours successfully ingested. Course staff documentation states the per-account limit is 10 concurrent Lambda workers, which we observed being exceeded transiently when async-invoked Lambdas retried on transient errors and stacked with newly-dispatched invocations. The `arn:aws:iam::*:policy/voc-cancel-cred` policy attached on deactivation is the lab's signature for revoking student credentials.
+### 7.2 Wikimedia dumps rate limiting
 
-The decision to **migrate the entire pipeline to UChicago RCC Midway3** was a direct response to these two failures. The Lambda-fan-out design is preserved in `aws/` and in the project's git history for reference; the same multiprocessing-at-the-leaf pattern works on Midway3 without any of the Lambda-environment constraints.
+Three dump-tier jobs (49788236 at 28 workers; 49791029 at 8; 49791901 at 4) all hit HTTP 429 or plateaued at ~13 files/min. The full 7-year pull would have required ~80 hours and 20+ sequential Slurm submissions. The two-tier design (§4.3) was the response.
 
-### 7.2 Wikimedia dumps rate-limiting on Midway3
+### 7.3 PySpark failed; pandas was sufficient
 
-The first Midway3 dump-ingest attempt (job **49788236**, 28 workers) hit HTTP 429 "Too Many Requests" on essentially every request after ~30 seconds. Reduced to 8 workers (job 49791029), we still saw 429-heavy traffic and ~10 file/minute effective throughput; reduced further to 4 workers (job 49791901), the 429s stopped but throughput plateaued at ~13 files/minute — meaning the full 65,000-file pull would have required ~80 hours wall-clock and 20+ sequential Slurm submissions to stay under the 4-hour single-job time limit. This is the kind of upstream limitation that no amount of additional cluster resources can fix.
-
-The two-tier redesign (§3, §4.3) was the response: keep the multiprocessing dump-pulling code as a demonstration of the leaf-parallel pattern, exercise it against a small validation sample (~350 files), and shift the bulk of the actual research data acquisition to the REST API endpoint, which is server-side aggregated and orders of magnitude faster per article. The REST tier completed all 31 articles in 70 seconds.
-
-### 7.3 Spark / JAVA_HOME on Midway3 caslake
-
-The aggregation layer was originally written in PySpark (`aggregate/aggregate_pageviews.py`), submitted via `slurm/aggregate.sbatch` (job **49794175**). The job failed at startup because `JAVA_HOME` is not exported on caslake nodes by default and there was no `spark/*` module available on this Midway3 build. Since the data volume after REST ingest is small (75,346 rows, ~3 MB in memory), Spark was overkill anyway; we replaced it with a pandas-based aggregation (`aggregate/aggregate_pandas.py`) that runs in ~5 seconds on the login node. The PySpark version is retained in the repo as documentation of the original architecture and would be the correct choice for the hypothetical full-dump-corpus aggregation.
+Job 49794175 (Spark aggregation) failed at startup: caslake nodes do not export `JAVA_HOME` and no `spark/*` modulefile is available. Rather than building Spark from source, we replaced the aggregator with pandas (`aggregate_pandas.py`), which completes in ~5 seconds on 75k rows. Spark would have been correct for the full dump corpus; for this dataset it was overkill. The PySpark code is retained for documentation but is not part of the working pipeline.
 
 ## 8. Reproducibility
 
-**Prerequisites:** A UChicago RCC account on Midway3 with access to the `macs30113` Slurm account (or any account with caslake-partition allocation). SSH access to `midway3.rcc.uchicago.edu`.
+See `docs/midway3_runbook.md` for the full step-by-step. In brief:
 
 ```bash
-# 1. Clone the repo on Midway3
 ssh CNETID@midway3.rcc.uchicago.edu
 git clone https://github.com/macs30113-s26/final-project-unemployment-signals.git wiki-attention
 cd wiki-attention
-
-# 2. (Once) Load the RCC anaconda module and install user-space deps
 module load python/anaconda-2022.05
-python -m pip install --user pyyaml statsmodels ruptures
-
-# 3. Submit the REST ingest job (PRIMARY data path, completes in ~2 minutes)
-sbatch slurm/ingest_rest.sbatch
-squeue -u $USER
-
-# 4. (Optional, validation only) Submit the dump-pull job for ~350 hours
-#    of raw-source samples. Be aware this is rate-limited by Wikimedia.
-sbatch slurm/ingest.sbatch
-
-# 5. Run the pandas aggregation (no Slurm — fast enough to run on login node)
+python -m pip install --user statsmodels ruptures
+sbatch slurm/ingest_rest.sbatch                  # ~70 s
 python aggregate/aggregate_pandas.py \
     --staging /scratch/midway3/$USER/wiki-attention/staging_rest \
     --curated /scratch/midway3/$USER/wiki-attention/curated
-
-# 6. (Optional) Cross-validate REST vs dump
-python aggregate/validate_dump_vs_rest.py \
-    --dump  /scratch/midway3/$USER/wiki-attention/staging \
-    --rest  /scratch/midway3/$USER/wiki-attention/staging_rest \
-    --out   analyze/figures/dump_rest_validation.csv
-
-# 7. Run the analysis on a sinteractive node (FRED HTTP access is required)
-sinteractive --account=macs30113 --partition=caslake \
-    --ntasks=1 --cpus-per-task=4 --mem=8G --time=00:30:00
-module load python/anaconda-2022.05
-python analyze/analyze.py \
-    --curated /scratch/midway3/$USER/wiki-attention/curated \
-    --out-dir analyze/figures
-
-# 8. Commit results
-exit
-git add slurm/logs/ analyze/figures/
-git commit -m "results: ingest+aggregate+analysis"
-git push
+# sinteractive node, FRED HTTP access required
+python analyze/analyze.py --curated <...> --out-dir analyze/figures
+python analyze/analyze_robustness.py --curated <...> --out-dir analyze/figures
 ```
 
 ## 9. Slurm Job IDs
 
-All Slurm runs that produced data or were diagnostic of the architecture evolution. Logs are committed under `slurm/logs/` for verification.
+| Stage                       | Job ID    | Wall-clock | Status                       | Notes |
+|-----------------------------|-----------|------------|------------------------------|-------|
+| Dump ingest (28-worker)     | 49788236  | 4.5 min    | COMPLETED, 99% HTTP-failed   | §7.2 |
+| Dump ingest (8-worker)      | 49791029  | ~13 min    | CANCELLED                    | §7.2 |
+| Dump ingest (4-worker)      | 49791901  | ~7 min     | CANCELLED                    | §7.2 |
+| REST ingest (all-agents)    | 49793806  | 69 s       | COMPLETED                    | 30/31, Résumé URL-encoding bug |
+| REST ingest (all-agents v2) | 49793986  | ~10 s      | COMPLETED                    | All 31 |
+| Spark aggregate             | 49794175  | 56 s       | **FAILED**                   | §7.3, JAVA_HOME unset |
+| **REST ingest (user-only, final)** | **49826767** | **70 s** | **COMPLETED**           | Final dataset (§10.1) |
 
-| Stage                            | Job ID    | Wall-clock | Status                       | Notes                                                                 |
-|----------------------------------|-----------|------------|------------------------------|-----------------------------------------------------------------------|
-| Dump ingest (28-worker)          | 49788236  | 4.5 min    | COMPLETED (99% HTTP-failed)  | First dump attempt, hit Wikimedia 429 limits — §7.2                   |
-| Dump ingest (8-worker)           | 49791029  | ~13 min    | CANCELLED                    | Mid-run cancelled when 429s persisted at lower concurrency — §7.2     |
-| Dump ingest (4-worker)           | 49791901  | ~7 min     | CANCELLED                    | Throughput plateau at 13 files/min — §7.2                             |
-| REST ingest (initial)            | 49793806  | 69 s       | COMPLETED                    | 30 articles ok, 1 fail (Résumé URL-encoding bug, since fixed)         |
-| REST ingest (re-run, Résumé fix) | 49793986  | ~10 s      | COMPLETED                    | All 31 articles ok                                                    |
-| Spark aggregate                  | 49794175  | 56 s       | FAILED                       | JAVA_HOME not set on caslake — §7.3, replaced by pandas version       |
+All logs committed under `slurm/logs/`.
 
 ## 10. Known Limitations
 
-1. **Wikimedia bot filtering.** The pageview dataset filters likely-bot traffic server-side, but residual contamination during news events is possible.
-2. **Access-type heterogeneity between REST and dump.** Confirmed by §5.5 — REST `all-access` includes mobile-app traffic that the dumps do not. The REST aggregates used in the analysis are the more complete signal; any direct *level* comparison between the two sources will systematically differ by ~2×.
-3. **Redirects resolved against the 2026 redirect graph.** An article that was renamed *and* redirected mid-window will be attributed to its post-redirect canonical title. The manually-curated `aliases` list in `config/articles.yaml` covers the most important historical cases.
-4. **Granger causality is *predictability*, not structural causation.** We do not claim Wikipedia attention causes unemployment statistics; we claim it precedes them.
-5. **Scratch storage 60-day purge.** Long-term archival of the staging data would require copying to `/project/` space.
-6. **Initial-load completeness for the dump tier.** The Slurm batches in §9 left ~350 hourly files in `staging/` spanning 2019-01-01..2019-01-10 plus 2024-01-15. Any subsequent re-running of the dump-tier (now with retry+backoff in place) will accumulate more — but no analysis in this README requires more than the existing sample.
+**10.1 REST `user` filter.** The final dataset uses `all-access/user`, which excludes Wikimedia's heuristic bot/spider classification. An earlier `all-agents` run inflated counts by ~20% on average. The user/agent classifier is itself heuristic.
+
+**10.2 REST vs dump access-type mismatch.** `dump_rest_validation.csv` covers 288 (article, date) pairs across 11 days where both sources have full coverage. Median relative difference is 11.8%, but the **mean is ~102%** with a long right tail — REST counts tend to be ~2× dump counts, plausibly because REST's `all-access` includes mobile-app traffic that the `en`+`en.m` dumps exclude, but the tail is wide enough that this is a **partial shape-check, not a full validation**. We do not claim the two sources reconcile at the level of individual records.
+
+**10.3 No alias merging in the REST primary path.** `ingest/ingest_pageviews_rest.py` fetches each canonical title's REST aggregates but does **not** merge aliases listed in `config/articles.yaml` (the dump-pull code does). If an article was renamed mid-window, the post-rename canonical may under-count compared to the redirect-resolved truth. The aliases are present in the config for the dump path's benefit; the README does not claim faithful redirect resolution for the primary analysis.
+
+**10.4 Construct validity of `tech_displacement`.** §5.5 shows that the group is dominated by AI-product attention (ChatGPT alone is 83% post-2023) rather than labour-displacement anxiety. A cleaner future operationalisation would require either a narrower article list (e.g., `Technological_unemployment` only) or a sentiment-weighted measure.
+
+**10.5 Granger predictability ≠ causation.** §5.3 is a forecast-improvement test on first-differenced series. We select the best-of-8 lags per group and do not correct for multiple comparisons; treat the p-values as descriptive evidence of temporal precedence, not as confirmatory tests of causal structure. The 2020 COVID shock plausibly drives both Wikipedia attention *and* jobless claims, so a common-shock confound cannot be ruled out without an instrument.
+
+**10.6 No formal lead-lag analysis in figures.** §5.2 reports a *visual* lead of attention over UNRATE in the COVID period; we did not compute a formal cross-correlation or event-study window. A future version should.
+
+**10.7 Dump pull is small.** §5.5 / §10.2 cross-validation is conditional on the 11 full-coverage days within the 353-file dump sample. Extrapolating to the full 7-year window would require completing the dump-tier pull (~80 h at the only safe concurrency).
+
+**10.8 Scratch storage.** Staging and curated data live on `/scratch/midway3/$USER`, purged after 60 days of inactivity. Outputs and CSVs are committed; raw staging is regenerable from public endpoints.
+
+## References
+
+- Choi, H., & Varian, H. (2012). Predicting the present with Google Trends. *Economic Record*, 88, 2–9.
+- Killick, R., Fearnhead, P., & Eckley, I. A. (2012). Optimal detection of changepoints with a linear computational cost. *Journal of the American Statistical Association*, 107(500), 1590–1598. (PELT)
+- Wikimedia Foundation. *Pageviews data dictionary*. https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageviews
