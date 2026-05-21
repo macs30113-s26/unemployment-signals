@@ -113,11 +113,23 @@ def fig_attention_vs_unrate(panel: pd.DataFrame, unrate: pd.DataFrame, out_path:
     plt.close(fig)
 
 
-def granger_table(panel: pd.DataFrame, target: pd.Series, max_lag: int = 8) -> pd.DataFrame:
-    # Granger test on first-differenced series for stationarity
+def granger_table(panel: pd.DataFrame, target: pd.Series, max_lag: int = 8,
+                  log_transform: bool = False) -> pd.DataFrame:
+    """Granger test on first-differenced series for stationarity.
+
+    If log_transform=True, applies np.log1p to both series before differencing.
+    This addresses §9.5: raw .diff() on pageview/claims series is dominated by
+    the COVID 2020 spike (counts span ~10x baseline), which may inflate the
+    apparent significance for groups that co-move with the COVID shock.
+    """
     rows = []
     for grp in GROUPS:
-        df = pd.concat([panel[grp].diff(), target.diff()], axis=1).dropna()
+        x = panel[grp].astype(float)
+        y = target.astype(float)
+        if log_transform:
+            x = np.log1p(x)
+            y = np.log1p(y)
+        df = pd.concat([x.diff(), y.diff()], axis=1).dropna()
         df.columns = ["attention", "target"]
         if len(df) < max_lag + 5:
             rows.append({"group": grp, "best_lag_weeks": None, "p_value": None,
@@ -287,9 +299,28 @@ def main():
         .resample("W-MON").mean()
         .reindex(panel.index, method="ffill")
     )
-    granger = granger_table(panel, icsa_weekly)
+    granger = granger_table(panel, icsa_weekly, log_transform=False)
+    print("  raw .diff() specification:")
     print(granger.to_string(index=False))
     granger.to_csv(args.out_dir / "granger_results.csv", index=False)
+
+    granger_log = granger_table(panel, icsa_weekly, log_transform=True)
+    print("  log1p .diff() specification (addresses §9.5 COVID-spike concern):")
+    print(granger_log.to_string(index=False))
+    granger_log.to_csv(args.out_dir / "granger_results_log.csv", index=False)
+
+    # Side-by-side comparison
+    granger_cmp = granger[["group", "best_lag_weeks", "p_value"]].rename(
+        columns={"best_lag_weeks": "best_lag_raw", "p_value": "p_value_raw"}
+    ).merge(
+        granger_log[["group", "best_lag_weeks", "p_value"]].rename(
+            columns={"best_lag_weeks": "best_lag_log", "p_value": "p_value_log"}
+        ),
+        on="group",
+    )
+    granger_cmp.to_csv(args.out_dir / "granger_results_comparison.csv", index=False)
+    print("  raw vs log side-by-side:")
+    print(granger_cmp.to_string(index=False))
 
     print("\nRunning cross-correlation lead-lag analysis...")
     xcorr_raw = cross_correlation_table(panel, icsa_weekly, max_lag_weeks=26,
