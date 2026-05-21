@@ -141,10 +141,11 @@ def read_dump(input_glob):
             "canonical": "object",
             "group": "object",
             "views": "int64",
-            "capture_end_utc": "datetime64[ns]",
+            "capture_end_utc": "object",
         },
     )
-    # Hour -> Day, then sum across en+en.m domains within the same day.
+    # Hour -> Day. capture_end_utc comes as ISO string; convert explicitly.
+    ddf["capture_end_utc"] = dd.to_datetime(ddf["capture_end_utc"])
     ddf["day"] = ddf["capture_end_utc"].dt.floor("D")
     daily = (
         ddf.groupby(["canonical", "group", "day"])["views"]
@@ -195,7 +196,9 @@ def main():
     print(f"[agg] weekly  task graph size: {info['weekly_graph_size']}")
     print(f"[agg] monthly task graph size: {info['monthly_graph_size']}")
 
-    weekly_pdf, monthly_pdf = dask.compute(weekly, monthly)
+    # Also materialize daily for cross-source day-level validation.
+    daily_for_out = ddf.groupby(["canonical", "group", "day"])["views"].sum().reset_index()
+    weekly_pdf, monthly_pdf, daily_pdf = dask.compute(weekly, monthly, daily_for_out)
     t1 = time.time()
     info["wall_time_sec"] = round(t1 - t0, 2)
 
@@ -206,8 +209,11 @@ def main():
     monthly_out = out_dir / "monthly_dask.csv"
     weekly_pdf.sort_values(["canonical", "week"]).to_csv(weekly_out, index=False)
     monthly_pdf.sort_values(["canonical", "month"]).to_csv(monthly_out, index=False)
+    daily_out = out_dir / "daily_dask.csv"
+    daily_pdf.sort_values(["canonical", "day"]).to_csv(daily_out, index=False)
     info["weekly_csv"] = str(weekly_out)
     info["monthly_csv"] = str(monthly_out)
+    info["daily_csv"] = str(daily_out)
     print(f"[agg] wrote {weekly_out}")
     print(f"[agg] wrote {monthly_out}")
 

@@ -1,0 +1,158 @@
+[big1] job 49899932 on midway3-0010.rcc.local at 2026-05-20T15:30:18-05:00
+[big1] target: 14 quarterly weeks, 2019-Q1..2022-Q2 (Jan/Apr/Jul/Oct first weeks)
+[big1] pre-run dump file count: 543
+[big1] === window 2019-01-01 .. 2019-01-08 ===
+2026-05-20 15:30:18,916 [INFO] window: 2019-01-01 00:00:00 -> 2019-01-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 15:30:18,917 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 15:30:18,966 [INFO] progress 30/168 (17.9%), 30 skipped, 0 failed, 0 total matches, 607.4/s, ETA 0min
+2026-05-20 15:30:18,975 [INFO] progress 60/168 (35.7%), 60 skipped, 0 failed, 0 total matches, 1031.4/s, ETA 0min
+2026-05-20 15:30:18,980 [INFO] progress 90/168 (53.6%), 90 skipped, 0 failed, 0 total matches, 1420.5/s, ETA 0min
+2026-05-20 15:30:18,989 [INFO] progress 120/168 (71.4%), 120 skipped, 0 failed, 0 total matches, 1654.2/s, ETA 0min
+2026-05-20 15:30:19,002 [INFO] progress 150/168 (89.3%), 150 skipped, 0 failed, 0 total matches, 1752.2/s, ETA 0min
+2026-05-20 15:30:19,006 [INFO] DONE in 0.0min: 168 done, 168 skipped, 0 failed, 0 total matches
+[big1] cumulative: 1s elapsed, 543 files staged
+[big1] === window 2019-04-01 .. 2019-04-08 ===
+2026-05-20 15:30:19,193 [INFO] window: 2019-04-01 00:00:00 -> 2019-04-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 15:30:19,194 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 15:34:03,584 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1571 total matches, 0.1/s, ETA 17min
+2026-05-20 15:36:31,819 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3146 total matches, 0.2/s, ETA 11min
+2026-05-20 15:38:54,413 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4715 total matches, 0.2/s, ETA 7min
+2026-05-20 15:40:35,340 [INFO] progress 120/168 (71.4%), 0 skipped, 0 failed, 6250 total matches, 0.2/s, ETA 4min
+2026-05-20 15:42:28,946 [INFO] progress 150/168 (89.3%), 0 skipped, 0 failed, 7739 total matches, 0.2/s, ETA 1min
+2026-05-20 15:42:28,947 [WARNING] FAIL (2019, 4, 4, 15): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 15:44:19,585 [INFO] DONE in 14.0min: 168 done, 0 skipped, 1 failed, 8589 total matches
+[big1] cumulative: 841s elapsed, 710 files staged
+[big1] === window 2019-07-01 .. 2019-07-08 ===
+2026-05-20 15:44:19,807 [INFO] window: 2019-07-01 00:00:00 -> 2019-07-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 15:44:19,808 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 15:47:41,678 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1520 total matches, 0.1/s, ETA 15min
+2026-05-20 15:49:54,508 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3027 total matches, 0.2/s, ETA 10min
+2026-05-20 15:51:18,597 [WARNING] FAIL (2019, 7, 2, 1): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 15:52:17,262 [INFO] progress 90/168 (53.6%), 0 skipped, 1 failed, 4490 total matches, 0.2/s, ETA 7min
+2026-05-20 15:54:03,554 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 5960 total matches, 0.2/s, ETA 4min
+2026-05-20 15:56:21,658 [INFO] progress 150/168 (89.3%), 0 skipped, 1 failed, 7423 total matches, 0.2/s, ETA 1min
+2026-05-20 15:57:40,293 [INFO] DONE in 13.3min: 168 done, 0 skipped, 1 failed, 8319 total matches
+[big1] cumulative: 1642s elapsed, 877 files staged
+[big1] === window 2019-10-01 .. 2019-10-08 ===
+2026-05-20 15:57:40,592 [INFO] window: 2019-10-01 00:00:00 -> 2019-10-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 15:57:40,593 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 16:01:17,897 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1536 total matches, 0.1/s, ETA 17min
+2026-05-20 16:03:55,767 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3096 total matches, 0.2/s, ETA 11min
+2026-05-20 16:06:04,126 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4625 total matches, 0.2/s, ETA 7min
+2026-05-20 16:07:57,115 [INFO] progress 120/168 (71.4%), 0 skipped, 0 failed, 6144 total matches, 0.2/s, ETA 4min
+2026-05-20 16:10:03,067 [INFO] progress 150/168 (89.3%), 0 skipped, 0 failed, 7672 total matches, 0.2/s, ETA 1min
+2026-05-20 16:11:29,582 [INFO] DONE in 13.8min: 168 done, 0 skipped, 0 failed, 8600 total matches
+[big1] cumulative: 2471s elapsed, 1045 files staged
+[big1] === window 2020-01-01 .. 2020-01-08 ===
+2026-05-20 16:11:29,800 [INFO] window: 2020-01-01 00:00:00 -> 2020-01-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 16:11:29,801 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 16:14:57,960 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1446 total matches, 0.1/s, ETA 16min
+2026-05-20 16:17:05,684 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 2949 total matches, 0.2/s, ETA 10min
+2026-05-20 16:18:59,260 [WARNING] FAIL (2020, 1, 1, 17): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 16:19:37,878 [INFO] progress 90/168 (53.6%), 0 skipped, 1 failed, 4391 total matches, 0.2/s, ETA 7min
+2026-05-20 16:21:26,387 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 5913 total matches, 0.2/s, ETA 4min
+2026-05-20 16:24:40,552 [WARNING] FAIL (2020, 1, 4, 21): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 16:24:40,553 [INFO] progress 150/168 (89.3%), 0 skipped, 2 failed, 7411 total matches, 0.2/s, ETA 2min
+2026-05-20 16:25:27,630 [INFO] DONE in 14.0min: 168 done, 0 skipped, 2 failed, 8360 total matches
+[big1] cumulative: 3309s elapsed, 1211 files staged
+[big1] === window 2020-04-01 .. 2020-04-08 ===
+2026-05-20 16:25:27,905 [INFO] window: 2020-04-01 00:00:00 -> 2020-04-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 16:25:27,905 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 16:29:19,829 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1578 total matches, 0.1/s, ETA 18min
+2026-05-20 16:31:53,065 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3181 total matches, 0.2/s, ETA 12min
+2026-05-20 16:34:03,903 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4769 total matches, 0.2/s, ETA 7min
+2026-05-20 16:35:59,202 [WARNING] FAIL (2020, 4, 3, 4): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 16:36:31,402 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 6309 total matches, 0.2/s, ETA 4min
+2026-05-20 16:38:54,077 [INFO] progress 150/168 (89.3%), 0 skipped, 1 failed, 7905 total matches, 0.2/s, ETA 2min
+2026-05-20 16:40:34,906 [INFO] DONE in 15.1min: 168 done, 0 skipped, 1 failed, 8868 total matches
+[big1] cumulative: 4216s elapsed, 1378 files staged
+[big1] === window 2020-07-01 .. 2020-07-08 ===
+2026-05-20 16:40:35,140 [INFO] window: 2020-07-01 00:00:00 -> 2020-07-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 16:40:35,140 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 16:44:01,595 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1532 total matches, 0.1/s, ETA 16min
+2026-05-20 16:46:14,782 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3049 total matches, 0.2/s, ETA 10min
+2026-05-20 16:48:06,147 [INFO] progress 90/168 (53.6%), 1 skipped, 0 failed, 4454 total matches, 0.2/s, ETA 7min
+2026-05-20 16:49:35,928 [INFO] progress 120/168 (71.4%), 1 skipped, 0 failed, 5923 total matches, 0.2/s, ETA 4min
+2026-05-20 16:52:35,276 [INFO] progress 150/168 (89.3%), 1 skipped, 0 failed, 7439 total matches, 0.2/s, ETA 1min
+2026-05-20 16:53:02,507 [INFO] DONE in 12.5min: 168 done, 1 skipped, 0 failed, 8379 total matches
+[big1] cumulative: 4964s elapsed, 1545 files staged
+[big1] === window 2020-10-01 .. 2020-10-08 ===
+2026-05-20 16:53:02,693 [INFO] window: 2020-10-01 00:00:00 -> 2020-10-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 16:53:02,693 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 16:56:35,150 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1581 total matches, 0.1/s, ETA 16min
+2026-05-20 16:58:41,719 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3142 total matches, 0.2/s, ETA 10min
+2026-05-20 17:00:57,735 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4674 total matches, 0.2/s, ETA 7min
+2026-05-20 17:02:52,946 [INFO] progress 120/168 (71.4%), 0 skipped, 0 failed, 6242 total matches, 0.2/s, ETA 4min
+2026-05-20 17:05:13,181 [INFO] progress 150/168 (89.3%), 0 skipped, 0 failed, 7836 total matches, 0.2/s, ETA 1min
+2026-05-20 17:06:08,620 [INFO] DONE in 13.1min: 168 done, 0 skipped, 0 failed, 8809 total matches
+[big1] cumulative: 5750s elapsed, 1713 files staged
+[big1] === window 2021-01-01 .. 2021-01-08 ===
+2026-05-20 17:06:08,819 [INFO] window: 2021-01-01 00:00:00 -> 2021-01-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 17:06:08,819 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 17:08:37,637 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1440 total matches, 0.2/s, ETA 11min
+2026-05-20 17:12:10,022 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 2959 total matches, 0.2/s, ETA 11min
+2026-05-20 17:14:12,519 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4516 total matches, 0.2/s, ETA 7min
+2026-05-20 17:14:51,246 [WARNING] FAIL (2021, 1, 2, 15): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 17:16:04,839 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 6045 total matches, 0.2/s, ETA 4min
+2026-05-20 17:17:46,618 [INFO] progress 150/168 (89.3%), 0 skipped, 1 failed, 7601 total matches, 0.2/s, ETA 1min
+2026-05-20 17:19:21,728 [INFO] DONE in 13.2min: 168 done, 0 skipped, 1 failed, 8542 total matches
+[big1] cumulative: 6543s elapsed, 1880 files staged
+[big1] === window 2021-04-01 .. 2021-04-08 ===
+2026-05-20 17:19:21,923 [INFO] window: 2021-04-01 00:00:00 -> 2021-04-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 17:19:21,924 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 17:22:27,636 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1539 total matches, 0.2/s, ETA 14min
+2026-05-20 17:24:29,556 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 3007 total matches, 0.2/s, ETA 9min
+2026-05-20 17:27:14,364 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4500 total matches, 0.2/s, ETA 7min
+2026-05-20 17:28:39,157 [INFO] progress 120/168 (71.4%), 0 skipped, 0 failed, 6014 total matches, 0.2/s, ETA 4min
+2026-05-20 17:31:58,775 [INFO] progress 150/168 (89.3%), 0 skipped, 0 failed, 7581 total matches, 0.2/s, ETA 2min
+2026-05-20 17:34:15,873 [WARNING] FAIL (2021, 4, 5, 16): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 17:34:15,879 [INFO] DONE in 14.9min: 168 done, 0 skipped, 1 failed, 8491 total matches
+[big1] cumulative: 7437s elapsed, 2047 files staged
+[big1] === window 2021-07-01 .. 2021-07-08 ===
+2026-05-20 17:34:16,078 [INFO] window: 2021-07-01 00:00:00 -> 2021-07-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 17:34:16,078 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 17:37:07,406 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1421 total matches, 0.2/s, ETA 13min
+2026-05-20 17:40:03,196 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 2844 total matches, 0.2/s, ETA 10min
+2026-05-20 17:42:04,077 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4266 total matches, 0.2/s, ETA 7min
+2026-05-20 17:42:54,374 [WARNING] FAIL (2021, 7, 2, 15): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 17:43:41,302 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 5682 total matches, 0.2/s, ETA 4min
+2026-05-20 17:45:41,670 [INFO] progress 150/168 (89.3%), 0 skipped, 1 failed, 7146 total matches, 0.2/s, ETA 1min
+2026-05-20 17:46:57,300 [INFO] DONE in 12.7min: 168 done, 0 skipped, 1 failed, 8041 total matches
+[big1] cumulative: 8199s elapsed, 2214 files staged
+[big1] === window 2021-10-01 .. 2021-10-08 ===
+2026-05-20 17:46:57,513 [INFO] window: 2021-10-01 00:00:00 -> 2021-10-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 17:46:57,513 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 17:50:05,540 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1459 total matches, 0.2/s, ETA 14min
+2026-05-20 17:52:16,334 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 2881 total matches, 0.2/s, ETA 10min
+2026-05-20 17:54:50,727 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4381 total matches, 0.2/s, ETA 7min
+2026-05-20 17:56:33,774 [INFO] progress 120/168 (71.4%), 0 skipped, 0 failed, 5889 total matches, 0.2/s, ETA 4min
+2026-05-20 17:58:40,741 [INFO] progress 150/168 (89.3%), 0 skipped, 0 failed, 7385 total matches, 0.2/s, ETA 1min
+2026-05-20 18:00:00,216 [INFO] DONE in 13.0min: 168 done, 0 skipped, 0 failed, 8295 total matches
+[big1] cumulative: 8982s elapsed, 2382 files staged
+[big1] === window 2022-01-01 .. 2022-01-08 ===
+2026-05-20 18:00:00,523 [INFO] window: 2022-01-01 00:00:00 -> 2022-01-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 18:00:00,523 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 18:03:12,451 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1317 total matches, 0.2/s, ETA 15min
+2026-05-20 18:05:33,805 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 2725 total matches, 0.2/s, ETA 10min
+2026-05-20 18:07:06,006 [WARNING] FAIL (2022, 1, 2, 1): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 18:07:59,621 [INFO] progress 90/168 (53.6%), 0 skipped, 1 failed, 4157 total matches, 0.2/s, ETA 7min
+2026-05-20 18:10:03,827 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 5642 total matches, 0.2/s, ETA 4min
+2026-05-20 18:12:20,042 [INFO] progress 150/168 (89.3%), 0 skipped, 1 failed, 7093 total matches, 0.2/s, ETA 1min
+2026-05-20 18:13:28,352 [INFO] DONE in 13.5min: 168 done, 0 skipped, 1 failed, 7967 total matches
+[big1] cumulative: 9790s elapsed, 2549 files staged
+[big1] === window 2022-04-01 .. 2022-04-08 ===
+2026-05-20 18:13:28,555 [INFO] window: 2022-04-01 00:00:00 -> 2022-04-08 00:00:00, 168 hourly targets, 4 workers
+2026-05-20 18:13:28,556 [INFO] staging dir: /scratch/midway3/yinyuanc/wiki-attention/staging
+2026-05-20 18:16:14,645 [INFO] progress 30/168 (17.9%), 0 skipped, 0 failed, 1478 total matches, 0.2/s, ETA 13min
+2026-05-20 18:19:19,345 [INFO] progress 60/168 (35.7%), 0 skipped, 0 failed, 2930 total matches, 0.2/s, ETA 11min
+2026-05-20 18:21:16,956 [INFO] progress 90/168 (53.6%), 0 skipped, 0 failed, 4398 total matches, 0.2/s, ETA 7min
+2026-05-20 18:22:51,829 [WARNING] FAIL (2022, 4, 3, 3): HTTPError: HTTP Error 429: Too Many Requests
+2026-05-20 18:22:55,925 [INFO] progress 120/168 (71.4%), 0 skipped, 1 failed, 5816 total matches, 0.2/s, ETA 4min
+2026-05-20 18:25:17,376 [INFO] progress 150/168 (89.3%), 0 skipped, 1 failed, 7334 total matches, 0.2/s, ETA 1min
+2026-05-20 18:27:21,711 [INFO] DONE in 13.9min: 168 done, 0 skipped, 1 failed, 8251 total matches
+[big1] cumulative: 10623s elapsed, 2716 files staged
+[big1] DONE at 2026-05-20T18:27:21-05:00
+[big1] total wall: 10623s
+[big1] windows ok: 14 / 14
+[big1] file count: 543 -> 2716 (delta: 2173)
+[big1] staging size: 1.5M

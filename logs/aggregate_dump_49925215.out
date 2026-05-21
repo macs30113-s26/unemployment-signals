@@ -1,0 +1,44 @@
+[sched] scheduler job 49925215 on midway3-0016.rcc.local at 2026-05-20T18:40:07-05:00
+[agg] dask version: 2024.5.0
+[agg] source=dump cluster=slurm n_workers=4
+[agg] input_glob: /scratch/midway3/yinyuanc/wiki-attention/staging/year=*/month=*/day=*/hour=*.jsonl.gz
+[agg] output_dir: /scratch/midway3/yinyuanc/wiki-attention/curated_dask_dump_slurm
+[agg] SLURMCluster job script:
+#!/usr/bin/env bash
+
+#SBATCH -J dask-worker
+#SBATCH -e logs/dask/dask-worker-%J.err
+#SBATCH -o logs/dask/dask-worker-%J.out
+#SBATCH -p caslake
+#SBATCH -A macs30113
+#SBATCH -n 1
+#SBATCH --cpus-per-task=2
+#SBATCH --mem=6G
+#SBATCH -t 00:30:00
+
+/software/python-anaconda-2022.05-el8-x86_64/bin/python -m distributed.cli.dask_worker tcp://10.50.250.16:46413 --name dummy-name --nthreads 2 --memory-limit 5.59GiB --nanny --death-timeout 60 --local-directory /scratch/midway3/yinyuanc/dask-scratch
+
+[agg] ---
+[agg] waiting for 4 workers to join...
+[agg] cluster ready: 4 workers
+[agg] dashboard: http://10.50.250.16:8787/status
+[agg]   worker: name=SLURMCluster-2 addr=tcp://10.50.250.138:38663
+[agg]   worker: name=SLURMCluster-0 addr=tcp://10.50.250.38:43743
+[agg]   worker: name=SLURMCluster-3 addr=tcp://10.50.250.54:44741
+[agg]   worker: name=SLURMCluster-1 addr=tcp://10.50.250.85:42789
+[agg] daily npartitions: 1
+[agg] weekly  task graph size: 30275
+[agg] monthly task graph size: 30279
+[agg] compute wall time: 38.49s
+[agg] weekly rows: 1,930, monthly rows: 1,374
+[agg] wrote /scratch/midway3/yinyuanc/wiki-attention/curated_dask_dump_slurm/weekly_dask.csv
+[agg] wrote /scratch/midway3/yinyuanc/wiki-attention/curated_dask_dump_slurm/monthly_dask.csv
+[agg] per-group totals (weekly):
+  tech_displacement             3,905,837
+  macro_insecurity                976,335
+  labour_market_stress            577,366
+  core_unemployment               325,609
+[agg] per-worker snapshot at end: {'SLURMCluster-2@tcp://10.50.250.138:38663': {'nthreads': 2, 'executing': 0, 'has_what': 0}, 'SLURMCluster-0@tcp://10.50.250.38:43743': {'nthreads': 2, 'executing': 0, 'has_what': 0}, 'SLURMCluster-3@tcp://10.50.250.54:44741': {'nthreads': 2, 'executing': 0, 'has_what': 0}, 'SLURMCluster-1@tcp://10.50.250.85:42789': {'nthreads': 2, 'executing': 0, 'has_what': 0}}
+[agg] wrote /scratch/midway3/yinyuanc/wiki-attention/curated_dask_dump_slurm/run_metadata.json
+[agg] OK
+[sched] DONE at 2026-05-20T18:41:02-05:00
