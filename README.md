@@ -94,43 +94,58 @@ The pipeline operates in two ingest tiers and one analysis tier. What was *actua
 | Tier | Source | Records pulled |
 |------|--------|----------------|
 | Layer 1A — REST API (primary)       | Wikimedia REST `all-access/user` daily aggregates, 31 articles × 7 years | **75,346 day-records** |
-| Layer 1B — raw dumps (validation)   | Wikimedia hourly dumps, sampled                                       | 353 hourly files (~10 days) |
-| Layer 2 — pandas aggregation        | Daily → weekly → monthly rollup, year-partitioned CSV                 | 75k → 10,954 weekly rows |
+| Layer 1B — raw dumps (validation)   | Wikimedia hourly dumps, 14-window quarterly sample (job 49899932)     | **2,716 hourly files (~130 GB streamed)** |
+| Layer 2 — Dask SLURMCluster agg.     | Daily → weekly → monthly rollup; 30,275-node task graph; 4 workers   | 75k REST → daily/weekly/monthly CSVs; 2,716 dump → same grain |
+| Layer 2 fallback — pandas agg.       | Same rollup, single-thread; kept for parity verification              | 75k → 10,954 weekly rows |
 | Layer 3 — analysis                  | Granger lag-VAR + PELT changepoint + matplotlib                       | 383-week panel × 4 groups |
 
-The Wikimedia hourly dump corpus is ~65,000 files (~3 TB compressed) for this window; the dump-pull code ([ingest/ingest_pageviews.py](ingest/ingest_pageviews.py)) is structurally capable of pulling all of them, but we **did not** do so — Wikimedia rate-limited us aggressively (§7.2), and the REST API delivers the same per-article daily totals for the curated 31-article list in 70 seconds (job 49826767). The primary analysis is built on the REST data; the dump sample is used only for cross-source validation (§5.5).
+The Wikimedia hourly dump corpus is ~65,000 files (~3 TB compressed) for this window; the dump-pull code ([ingest/ingest_pageviews.py](ingest/ingest_pageviews.py)) is structurally capable of pulling all of them, but we **did not** do so — Wikimedia rate-limited us aggressively (Appendix A.2), and the REST API delivers the same per-article daily totals for the curated 31-article list in 70 seconds (job 49826767). After establishing the REST primary path, we expanded the dump sample to 2,716 hourly files across 14 quarterly weeks (~130 GB raw streamed, job 49899932) specifically to make the cross-source validation (§9.2) and the Dask SLURMCluster task graph large enough to be a real distributed-compute exercise rather than a toy. The primary analysis is still built on REST; dumps are used for validation and as a corpus-scale test of the Layer-2 aggregator.
 
 We do not claim TB-scale realised processing. The scalable-computing patterns demonstrated (§4) are real, but the dataset is small.
 
 ## 4. Architecture
 
 ```
-   Wikimedia REST       Wikimedia dumps      FRED public CSV
-        │                     │                     │
-        │ 31 articles         │ 353 hourly files    │
-        ▼                     ▼                     │
-   Layer 1A PRIMARY      Layer 1B VALIDATION        │
-   multiprocessing       multiprocessing            │
-   Pool(6), Slurm        Pool(4), Slurm, backoff    │
-        │                     │                     │
-        ▼                     ▼                     │
-   staging_rest/         staging/                   │
-   31 jsonl.gz           353 jsonl.gz               │
-        │                     │                     │
-        ▼                     │                     │
-   Layer 2 AGG               │                     │
-   aggregate_pandas.py        │                     │
-        │                     ▼                     │
-        ▼              validate_dump_vs_rest.py     │
-   curated/{daily,             │                    │
-   weekly,monthly}/            ▼                    │
-        │             dump_rest_validation.csv      │
-        ▼                                           │
-   Layer 3 ANALYZE  ◄──────────────────────────────┘
-   analyze.py + analyze_robustness.py
-        │
-        ▼
-   analyze/figures/  (3 PNG + 6 CSV)
+   Wikimedia REST            Wikimedia dumps                FRED public CSV
+        │                          │                              │
+        │ 31 articles              │ 2,716 hourly files           │
+        ▼                          ▼                              │
+   Layer 1A PRIMARY           Layer 1B VALIDATION                 │
+   multiprocessing            multiprocessing                     │
+   Pool(6), Slurm             Pool(4), Slurm, exp.backoff         │
+   (49826767)                 (49895146 probe, 49899932 big1)     │
+        │                          │                              │
+        ▼                          ▼                              │
+   staging_rest/              staging/                            │
+   31 jsonl.gz                2,716 jsonl.gz (~130 GB raw)        │
+        │                          │                              │
+        └──────────┬───────────────┘                              │
+                   ▼                                              │
+        Layer 2 — Dask SLURMCluster                               │
+        aggregate_dask.py  --cluster slurm                        │
+        1 scheduler sbatch + 4 worker sbatch (5 job_ids/run)      │
+        Task graph: 30,275 nodes (dump corpus)                    │
+        (49925818 REST, 49925821 dump; v1: 49925215)              │
+                   │                                              │
+                   ├──→ curated_dask_slurm/{daily,weekly,monthly}.csv (REST)
+                   └──→ curated_dask_dump_slurm/{daily,weekly,monthly}.csv (dump)
+                   │                                              │
+                   ▼                                              │
+        validate_dask_dump_vs_rest.py                             │
+        2,927 daily (article, day) pairs                          │
+        → dask_dump_vs_rest_validation.csv                        │
+                   │                                              │
+                   ▼                                              │
+        Layer 3 — ANALYZE                                         │
+        analyze.py + analyze_robustness.py  ◄─────────────────────┘
+        Granger (raw + log spec) + cross-correlation (raw + log)
+        + PELT changepoint + matplotlib
+                   │
+                   ▼
+        analyze/figures/  (4 PNG + 12 CSV)
+
+   Fallback path (kept for parity verification, single-thread):
+   aggregate_pandas.py → curated/{daily,weekly,monthly}/*.csv → same Layer 3.
 ```
 
 ### 4.1 Scalable-computing patterns demonstrated
@@ -250,17 +265,32 @@ ssh CNETID@midway3.rcc.uchicago.edu
 git clone https://github.com/macs30113-s26/final-project-unemployment-signals.git wiki-attention
 cd wiki-attention
 module load python/anaconda-2022.05
-python -m pip install --user statsmodels ruptures
-sbatch slurm/ingest_rest.sbatch                  # ~70 s, REST primary
-python aggregate/aggregate_pandas.py \
-    --staging /scratch/midway3/$USER/wiki-attention/staging_rest \
-    --curated /scratch/midway3/$USER/wiki-attention/curated
-# sinteractive node (needed for FRED HTTP access):
+python -m pip install --user -r requirements.txt   # dask, jobqueue, statsmodels, ruptures, etc.
+
+# Layer 1A — REST ingest (PRIMARY, ~70 s)
+sbatch slurm/ingest_rest.sbatch
+
+# Layer 1B — dump ingest (VALIDATION; ~3 h for the 14-window 2,716-file pull)
+sbatch sbatch/ingest_big1.sbatch
+
+# Layer 2 — Dask SLURMCluster aggregation (MAIN PATH; ~5–40 s compute + worker spin-up)
+sbatch sbatch/aggregate_dask.sbatch        # REST source
+sbatch sbatch/aggregate_dask_dump.sbatch   # dump source
+
+# Cross-source validation (110 complete days, 2,927 pairs)
+python aggregate/validate_dask_dump_vs_rest.py
+
+# Optional fallback: pandas aggregator (single-thread, byte-identical Layer-3 inputs):
+# python aggregate/aggregate_pandas.py \
+#     --staging /scratch/midway3/$USER/wiki-attention/staging_rest \
+#     --curated /scratch/midway3/$USER/wiki-attention/curated
+
+# Layer 3 — analysis (interactive; FRED HTTP needs a compute node):
 sinteractive --account=macs30113 --partition=caslake \
     --ntasks=1 --cpus-per-task=4 --mem=8G --time=00:30:00
 module load python/anaconda-2022.05
-python analyze/analyze.py            --curated <...> --out-dir analyze/figures
-python analyze/analyze_robustness.py --curated <...> --out-dir analyze/figures
+python analyze/analyze.py            --curated /scratch/midway3/$USER/wiki-attention/curated --out-dir analyze/figures
+python analyze/analyze_robustness.py --curated /scratch/midway3/$USER/wiki-attention/curated --out-dir analyze/figures
 ```
 
 ## 7. Incidents and Engineering Pivots

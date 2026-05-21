@@ -1,16 +1,21 @@
-# Python deps needed in the user pip env on Midway3.
-# Most of these come from the rcc anaconda module already, but we list them
-# so the README is self-contained and the env is reproducible.
+# Python deps for the wiki-attention pipeline on Midway3.
+# Most of these ship with the rcc anaconda module already (pandas, numpy,
+# matplotlib, statsmodels, pyarrow); we list them so the README is
+# self-contained and `pip install -r requirements.txt` reproduces the env
+# from a clean Python.
 
-# Ingest (minimal — pyyaml is the only non-stdlib dep)
+# Ingest (Layer 1) — multiprocessing HTTP fan-out
 pyyaml==6.0.1
 requests==2.32.3
 
-# Aggregate (Spark)
-pyspark==3.5.1
+# Aggregate (Layer 2) — Dask SLURMCluster + dask-jobqueue
+# (Spark was attempted but replaced; see README §7.3 / Appendix A.3)
+dask==2024.5.0
+distributed==2024.5.0
+dask-jobqueue==0.8.5
 pyarrow==15.0.2
 
-# Analyze (small-data stats)
+# Analyze (Layer 3) — small-data stats and figures
 pandas==2.2.2
 numpy==1.26.4
 matplotlib==3.9.0
