@@ -75,7 +75,7 @@ def load_pageviews(curated_dir: Path, grain: str = "weekly") -> pd.DataFrame:
     df = pd.concat([pd.read_csv(p) for p in parts], ignore_index=True)
     df["week_start"] = pd.to_datetime(df["period"])
     df = df.rename(columns={"group": "grp"})
-    return df
+    return df[["week_start", "canonical", "grp", "views"]]
 
 
 def load_fred(series_id: str) -> pd.DataFrame:
