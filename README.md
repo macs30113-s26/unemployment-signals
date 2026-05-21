@@ -77,7 +77,7 @@ final-project-unemployment-signals/
 ├── slurm/                                                 ARCHIVED v1 sbatch + logs (§7.2, §7.3)
 │   ├── ingest_rest.sbatch                                 v1 REST ingest (49826767, final v1 pipeline)
 │   ├── ingest.sbatch                                      v1 diagnostic dump-pull (§7.2)
-│   └── logs/                                              13 committed stdout/stderr files incl. Spark FAILED
+│   └── logs/                                              14 committed stdout/stderr files (7 jobs × out+err) incl. Spark FAILED
 │
 └── aws/                                                   ARCHIVED FAILED-ATTEMPT (§7.1)
     ├── README.md                                          incident archive
@@ -234,22 +234,7 @@ python analyze/analyze_robustness.py --curated <...> --out-dir analyze/figures
 
 ## 7. Incidents and Engineering Pivots
 
-### 7.1 Failed AWS Lambda pipeline
-
-The original cloud-fan-out architecture (AWS Lambda + S3 + Spark + Athena) is archived under [aws/](aws/) and **never completed an end-to-end run**. Two attempts triggered AWS Academy Learner Lab account deactivations:
-
-- Concurrency = 40: deactivated at ~12 minutes, $20.30 / $50 spent. Post-deactivation IAM included an `s3:ListBucket` explicit deny that prevented standard resume logic.
-- Concurrency = 8 (guardrail at 10): deactivated at ~29 minutes, $0 spent, 2,000 / 21,000 target hours pulled. The lab's per-account Lambda concurrency cap is 10; async retries appear to have transiently exceeded it.
-
-The migration to Midway3 was the direct response. See [aws/README.md](aws/README.md) for the incident archive.
-
-### 7.2 Wikimedia dumps rate limiting
-
-Three dump-tier jobs (49788236 at 28 workers; 49791029 at 8; 49791901 at 4) all hit HTTP 429 or plateaued at ~13 files/min. The full 7-year pull would have required ~80 hours and 20+ sequential Slurm submissions. The two-tier design (§4.1) was the response.
-
-### 7.3 PySpark failed; migrated to Dask SLURMCluster
-
-Job 49794175 (Spark aggregation) failed at startup: caslake nodes do not export `JAVA_HOME` and no `spark/*` modulefile is available. Rather than building Spark from source, the aggregator was first replaced with [pandas](aggregate/aggregate_pandas.py) as a stopgap (~5 s on 75k rows; sufficient for the REST corpus but not for the larger dump corpus pulled in §4). The pipeline then migrated to [Dask + dask-jobqueue](aggregate/aggregate_dask.py), which preserves the distributed-compute design intent without a JVM dependency: the scheduler runs in one `sbatch` process and submits `N` worker Slurm jobs via `SLURMCluster.scale(jobs=N)`. On the 2,716-file dump corpus this produces a 30,275-node task graph across 4 cross-node workers; same Python codepath works as `LocalCluster` for single-node debugging. The dead Spark code has been removed; only `slurm/logs/aggregate_49794175.{out,err}` is retained as the incident record.
+Three engineering pivots shaped the final pipeline: (a) the original AWS Lambda + S3 + Spark + Athena fan-out **never completed an end-to-end run** and triggered two AWS Academy Learner Lab account deactivations, prompting migration to Midway3; (b) Wikimedia dump-server rate limiting capped the full-corpus pull at ~80 h wall-clock at safe concurrency, motivating the two-tier REST-primary / dump-validation design (§4); (c) the Spark aggregator failed at startup on caslake (no `JAVA_HOME`, no `spark/*` modulefile), and the pipeline migrated through a brief pandas stopgap to the current Dask `SLURMCluster` design. Full incident detail — IAM denials, 429 patterns, Slurm job ids, dead-code retention policy — is in [**Appendix A**](#appendix-a-incidents-and-engineering-pivots-detailed). Headline incidents are referenced from this section by id only.
 
 ## 8. Slurm Job IDs
 
@@ -303,12 +288,30 @@ The v2 result is the stronger consistency check: two independent ingest pipeline
 
 **9.6 No formal lead-lag analysis in figures.** §5.2 reports a *visual* lead of attention over UNRATE in the COVID period; we did not compute a formal cross-correlation or event-study window. A future version should.
 
-**9.7 Dump pull is small.** §5.5 / §9.2 cross-validation is conditional on the 11 full-coverage days within the 353-file dump sample. Extrapolating to the full 7-year window would require completing the dump-tier pull (~80 h at the only safe concurrency).
-
-**9.8 Scratch storage.** Staging and curated data live on `/scratch/midway3/$USER`, purged after 60 days of inactivity. Outputs and CSVs are committed; raw staging is regenerable from public endpoints.
+**9.7 Scratch storage.** Staging and curated data live on `/scratch/midway3/$USER`, purged after 60 days of inactivity. Outputs and CSVs are committed; raw staging is regenerable from public endpoints.
 
 ## References
 
 - Choi, H., & Varian, H. (2012). Predicting the present with Google Trends. *Economic Record*, 88, 2–9.
 - Killick, R., Fearnhead, P., & Eckley, I. A. (2012). Optimal detection of changepoints with a linear computational cost. *Journal of the American Statistical Association*, 107(500), 1590–1598. (PELT)
 - Wikimedia Foundation. *Pageviews data dictionary*. https://wikitech.wikimedia.org/wiki/Analytics/Data_Lake/Traffic/Pageviews
+
+
+## Appendix A. Incidents and Engineering Pivots (detailed)
+
+### A.1 Failed AWS Lambda pipeline
+
+The original cloud-fan-out architecture (AWS Lambda + S3 + Spark + Athena) is archived under [aws/](aws/) and **never completed an end-to-end run**. Two attempts triggered AWS Academy Learner Lab account deactivations:
+
+- Concurrency = 40: deactivated at ~12 minutes, $20.30 / $50 spent. Post-deactivation IAM included an `s3:ListBucket` explicit deny that prevented standard resume logic.
+- Concurrency = 8 (guardrail at 10): deactivated at ~29 minutes, $0 spent, 2,000 / 21,000 target hours pulled. The lab's per-account Lambda concurrency cap is 10; async retries appear to have transiently exceeded it.
+
+The migration to Midway3 was the direct response. See [aws/README.md](aws/README.md) for the incident archive.
+
+### A.2 Wikimedia dumps rate limiting
+
+Three dump-tier jobs (49788236 at 28 workers; 49791029 at 8; 49791901 at 4) all hit HTTP 429 or plateaued at ~13 files/min. The full 7-year pull would have required ~80 hours and 20+ sequential Slurm submissions. The two-tier design (§4.1) was the response.
+
+### A.3 PySpark failed; migrated to Dask SLURMCluster
+
+Job 49794175 (Spark aggregation) failed at startup: caslake nodes do not export `JAVA_HOME` and no `spark/*` modulefile is available. Rather than building Spark from source, the aggregator was first replaced with [pandas](aggregate/aggregate_pandas.py) as a stopgap (~5 s on 75k rows; sufficient for the REST corpus but not for the larger dump corpus pulled in §4). The pipeline then migrated to [Dask + dask-jobqueue](aggregate/aggregate_dask.py), which preserves the distributed-compute design intent without a JVM dependency: the scheduler runs in one `sbatch` process and submits `N` worker Slurm jobs via `SLURMCluster.scale(jobs=N)`. On the 2,716-file dump corpus this produces a 30,275-node task graph across 4 cross-node workers; same Python codepath works as `LocalCluster` for single-node debugging. The dead Spark code has been removed; only `slurm/logs/aggregate_49794175.{out,err}` is retained as the incident record.
