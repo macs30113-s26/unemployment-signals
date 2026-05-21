@@ -8,6 +8,12 @@
 
 ---
 
+## Executive Summary
+
+This project measures public attention to unemployment and economic insecurity via Wikipedia pageviews on 31 curated articles across four thematic groups (`core_unemployment`, `labour_market_stress`, `macro_insecurity`, `tech_displacement`) from January 2019 through May 2026, tested against BLS jobless-claims data from FRED. Of three hypotheses tested, **H1 (classical-unemployment attention Granger-predicts initial jobless claims) is consistent with the data; H2 (tech-displacement attention is decoupled from realised labour-market stats) is consistent; H3 (ChatGPT launch caused a structural break in labour-displacement anxiety) is rejected by a §5.5 robustness check** — the break disappears when articles created after the launch window are excluded, exposing a measurement artifact rather than a structural shift. The compute pipeline is fully Slurm-scheduled: REST and dump ingest each run as `sbatch` jobs (8 total in §8), and aggregation runs as a [Dask SLURMCluster](https://jobqueue.dask.org/) that submits **5 simultaneous Slurm job_ids** per run (1 scheduler + 4 cross-node workers) and operates on a 30,275-node task graph over 2,716 hourly dump files (~130 GB raw streamed); cross-source validation against REST reconciles to **median 1.74%** on 2,927 daily (article, day) pairs.
+
+---
+
 ## 1. Research Question
 
 How did public attention to unemployment and economic insecurity change between 2019 and 2026, and how did that attention respond to four macro-economic shocks: the March-2020 pandemic layoff wave, the 2022 inflation surge, the November-2022 ChatGPT launch, and the 2023 tech-sector layoff cycle?
@@ -38,9 +44,11 @@ final-project-unemployment-signals/
 │   └── verify_articles.py                                 Wikipedia title/redirect smoke check
 │
 ├── aggregate/                                             Layer 2: daily → weekly/monthly rollup
-│   ├── aggregate_pandas.py                                WORKING aggregator (~5 s on 75k rows)
-│   ├── aggregate_pageviews.py                             PySpark version, attempted but failed (§7.3)
-│   └── validate_dump_vs_rest.py                           cross-source consistency check
+│   ├── aggregate_dask.py                                  Dask aggregator (SLURMCluster or LocalCluster)
+│   ├── aggregate_dask_smoke.py                            LocalCluster smoke test (Day 1)
+│   ├── aggregate_pandas.py                                pandas fallback (~5 s on 75k rows)
+│   ├── validate_dask_dump_vs_rest.py                      daily-grain cross-source validation (Day 2)
+│   └── validate_dump_vs_rest.py                           original weekly cross-source check
 │
 ├── analyze/                                               Layer 3: Granger + PELT + figures
 │   ├── analyze.py                                         main analysis
@@ -53,14 +61,23 @@ final-project-unemployment-signals/
 │       ├── changepoints.csv                               §5.4 numbers
 │       ├── robustness_changepoints.csv                    §5.5 subset breaks
 │       ├── tech_article_coverage.csv                      §5.5 coverage diagnostic
-│       ├── user_vs_allagents_comparison.csv               §10.1 bot-share evidence
-│       └── dump_rest_validation.csv                       §5.5 / §10.2 cross-source check
+│       ├── user_vs_allagents_comparison.csv               §9.1 bot-share evidence
+│       ├── dump_rest_validation.csv                       v1 weekly cross-source check (288 pairs)
+│       ├── dask_dump_vs_rest_validation.csv               v2 daily cross-source check (2,927 pairs, §9.2)
+│       └── dump_complete_days.json                        complete-day filter (110 days ≥20h)
 │
-├── slurm/
-│   ├── ingest_rest.sbatch                                 final REST ingest job
-│   ├── ingest.sbatch                                      diagnostic dump-pull job
-│   ├── aggregate.sbatch                                   Spark sbatch (job 49794175 — failed)
-│   └── logs/                                              13 committed stdout/stderr files
+├── sbatch/                                                Dask SLURMCluster pipeline (Day 1+2)
+│   ├── ingest_probe.sbatch                                Wikimedia rate-limit probe (49895146)
+│   ├── ingest_big1.sbatch                                 14-window dump ingest (49899932, 2716 files)
+│   ├── aggregate_dask.sbatch                              REST SLURMCluster aggregator (49897577/992, 49925818)
+│   └── aggregate_dask_dump.sbatch                         dump SLURMCluster aggregator (49925215, 49925821)
+│
+├── logs/                                                  stdout/stderr for Day 1+2 Slurm jobs
+│
+├── slurm/                                                 ARCHIVED v1 sbatch + logs (§7.2, §7.3)
+│   ├── ingest_rest.sbatch                                 v1 REST ingest (49826767, final v1 pipeline)
+│   ├── ingest.sbatch                                      v1 diagnostic dump-pull (§7.2)
+│   └── logs/                                              13 committed stdout/stderr files incl. Spark FAILED
 │
 └── aws/                                                   ARCHIVED FAILED-ATTEMPT (§7.1)
     ├── README.md                                          incident archive
@@ -124,7 +141,9 @@ We do not claim TB-scale realised processing. The scalable-computing patterns de
 
 **Two-tier strategy under upstream rate-limiting.** When the dump server's per-IP cap made a full pull untenable (~80 h wall-clock at the only concurrency that did not trigger HTTP 429), we shifted the primary path to the REST API and kept the dump-pull as a validation sample. This is itself a scalable-computing decision: when the upstream resource is rate-limited rather than parallelism-limited, vertical workload reorganisation beats throwing more workers at the leaf.
 
-**HPC scheduling under Slurm with full job-id audit trail.** Every ingest run is an `sbatch` submission. Seven Slurm job IDs (§9) span the project's life; all `stdout`/`stderr` are committed under [slurm/logs/](slurm/logs/). The Spark aggregation was *attempted* (job 49794175) but **failed** at startup (JAVA_HOME unset on caslake); §7.3 explains why this was replaced with a pandas implementation rather than re-attempted with manual Spark setup.
+**HPC scheduling under Slurm with full job-id audit trail.** Both ingest and aggregation run as `sbatch` submissions on the caslake partition; all `stdout`/`stderr` are committed under [logs/](logs/) (new Dask pipeline) and [slurm/logs/](slurm/logs/) (archived v1). The Spark aggregation was originally attempted (job 49794175) but **failed** at startup (JAVA_HOME unset on caslake); §7.3 explains the migration to Dask.
+
+**Distributed aggregation via Dask SLURMCluster.** [aggregate/aggregate_dask.py](aggregate/aggregate_dask.py) uses [dask-jobqueue](https://jobqueue.dask.org/) to launch `N` worker Slurm jobs (each its own `sbatch`) while the scheduler runs in a parent `sbatch` process. A single aggregation run produces **5 simultaneous Slurm job_ids** (1 scheduler + 4 workers) on independent compute nodes — visible in `squeue` and in [logs/aggregate_dump_49925821.out](logs/aggregate_dump_49925821.out). Same Python codepath, two cluster modes: `--cluster local` (LocalCluster, single-node debugging) and `--cluster slurm` (cross-node distributed). On the 2,716-file dump corpus the task graph has 30,275 nodes; compute wall-time is 38 s after worker spin-up. This is Python-only — no JVM dependency — and replaces the failed Spark path.
 
 ## 5. Findings
 
@@ -228,19 +247,26 @@ The migration to Midway3 was the direct response. See [aws/README.md](aws/README
 
 Three dump-tier jobs (49788236 at 28 workers; 49791029 at 8; 49791901 at 4) all hit HTTP 429 or plateaued at ~13 files/min. The full 7-year pull would have required ~80 hours and 20+ sequential Slurm submissions. The two-tier design (§4.1) was the response.
 
-### 7.3 PySpark failed; pandas was sufficient
+### 7.3 PySpark failed; migrated to Dask SLURMCluster
 
-Job 49794175 (Spark aggregation) failed at startup: caslake nodes do not export `JAVA_HOME` and no `spark/*` modulefile is available. Rather than building Spark from source, we replaced the aggregator with pandas ([aggregate_pandas.py](aggregate/aggregate_pandas.py)), which completes in ~5 seconds on 75k rows. Spark would have been correct for the full dump corpus; for this dataset it was overkill. The PySpark code ([aggregate_pageviews.py](aggregate/aggregate_pageviews.py)) is retained for documentation but is not part of the working pipeline.
+Job 49794175 (Spark aggregation) failed at startup: caslake nodes do not export `JAVA_HOME` and no `spark/*` modulefile is available. Rather than building Spark from source, the aggregator was first replaced with [pandas](aggregate/aggregate_pandas.py) as a stopgap (~5 s on 75k rows; sufficient for the REST corpus but not for the larger dump corpus pulled in §4). The pipeline then migrated to [Dask + dask-jobqueue](aggregate/aggregate_dask.py), which preserves the distributed-compute design intent without a JVM dependency: the scheduler runs in one `sbatch` process and submits `N` worker Slurm jobs via `SLURMCluster.scale(jobs=N)`. On the 2,716-file dump corpus this produces a 30,275-node task graph across 4 cross-node workers; same Python codepath works as `LocalCluster` for single-node debugging. The dead Spark code has been removed; only `slurm/logs/aggregate_49794175.{out,err}` is retained as the incident record.
 
 ## 8. Slurm Job IDs
 
 ### Final pipeline (the run whose output produces the figures and CSVs in this repo)
 
-| Stage              | Job ID       | Wall-clock | Status         | Output            |
-|--------------------|--------------|------------|----------------|-------------------|
-| REST ingest (user) | **49826767** | 70 s       | **COMPLETED**  | `staging_rest/` → 75,346 day-records that feed everything downstream |
+| Stage                          | Job ID         | Wall-clock | Status        | Output            |
+|--------------------------------|---------------|------------|---------------|-------------------|
+| REST ingest (user, v1)         | **49826767**   | 70 s       | **COMPLETED** | `staging_rest/` → 75,346 day-records (REST primary) |
+| Wikimedia rate-limit probe     | **49895146**   | 14 min 42 s| **COMPLETED** | 190/192 hourly dump files; calibrated 0.22 files/s sustained throughput |
+| Big dump ingest (14 windows)   | **49899932**   | 2 h 57 min | **COMPLETED** | 14/14 windows OK, 2,716 hourly dump files (~130 GB raw streamed) |
+| REST Dask SLURMCluster v1      | **49897577**   | 5.77 s     | **COMPLETED** | 4 workers (49897715–18) across 4 nodes; weekly/monthly CSV |
+| REST Dask SLURMCluster v2      | **49897992**   | 6.68 s     | **COMPLETED** | 4 workers across 4 different nodes; per-worker snapshot added |
+| REST Dask SLURMCluster (daily) | **49925818**   | 5.91 s     | **COMPLETED** | 4 workers; daily output for cross-source validation |
+| Dump Dask SLURMCluster v1      | **49925215**   | 38.49 s    | **COMPLETED** | 2,716-file aggregation; 30,275-node task graph; weekly/monthly |
+| Dump Dask SLURMCluster (daily) | **49925821**   | 38 s       | **COMPLETED** | 4 workers (49925822–25), 5-job same-frame in `squeue`; daily output |
 
-Post-ingest steps ([aggregate_pandas.py](aggregate/aggregate_pandas.py), [analyze.py](analyze/analyze.py), [analyze_robustness.py](analyze/analyze_robustness.py)) ran interactively on a sinteractive node rather than via `sbatch`: the post-ingest data volume is 75k rows / ~3 MB in memory, so pandas finishes the aggregation in ~5 seconds and the analysis in ~30 seconds, and a separate Slurm submission for each would be ceremonial. The decision is described honestly in §7.3 and §4.1 rather than papered over with cosmetic sbatch wrappers.
+All `stdout`/`stderr` for the Dask-pipeline jobs are committed under [logs/](logs/) (file names encode the job_id); the original v1 REST ingest log is at [slurm/logs/rest_49826767.out](slurm/logs/rest_49826767.out). The architecture pivot from a single-`sbatch`/pandas pipeline (v1, May 19) to a Dask-`SLURMCluster`/multi-job pipeline (v2, May 20–) is documented in §7.3 and §4.
 
 ### Diagnostic / failed runs (architecture-evolution evidence)
 
@@ -261,7 +287,13 @@ All stdout/stderr from these jobs are committed under [slurm/logs/](slurm/logs/)
 
 **9.1 REST `user` filter.** The final dataset uses `all-access/user`, which excludes Wikimedia's heuristic bot/spider classification. The earlier `all-agents` run inflated total counts by 19.5% on a weighted-mean basis, with per-group bot share ranging 16.2%–26.6% (core_unemployment had the highest bot contamination). Evidence: [analyze/figures/user_vs_allagents_comparison.csv](analyze/figures/user_vs_allagents_comparison.csv), computed from the `staging_rest_allagents/` backup vs. the final `staging_rest/`. The user/agent classifier is itself heuristic.
 
-**9.2 REST vs dump access-type mismatch.** [dump_rest_validation.csv](analyze/figures/dump_rest_validation.csv) covers 288 (article, date) pairs across 11 days where both sources have full coverage. Median relative difference is 11.8%, but the **mean is ~102%** with a long right tail — REST counts tend to be ~2× dump counts, plausibly because REST's `all-access` includes mobile-app traffic that the `en`+`en.m` dumps exclude, but the tail is wide enough that this is a **partial shape-check, not a full validation**. We do not claim the two sources reconcile at the level of individual records.
+**9.2 REST vs dump access-type comparison.** Two validation runs exist:
+
+- *v1 (weekly, 288 pairs).* [dump_rest_validation.csv](analyze/figures/dump_rest_validation.csv) covers 288 (article, date) pairs across 11 days from the v1 dump corpus. Median relative difference 11.8%, mean ~102% with a long right tail (most spread came from days with only 1–2 hours of dump coverage — a sampling artifact, not a source-disagreement).
+
+- *v2 (daily, 2,927 pairs).* [dask_dump_vs_rest_validation.csv](analyze/figures/dask_dump_vs_rest_validation.csv) uses the 2,716-file dump corpus (job 49899932) compared against REST at the **daily** grain, restricted to 110 days with ≥20 hours of dump coverage (see [dump_complete_days.json](analyze/figures/dump_complete_days.json)). **Median |rel_diff| 1.74%**, mean 10.46%, p95 85.75%. Signed mean (REST − dump) / dump = **−7.31%**: REST is on average slightly *below* the all-access dump, consistent with REST's `user`-agent filter removing some bot/spider traffic that the dump retains. 40.8% of pairs have REST > dump; 59.2% have dump > REST.
+
+The v2 result is the stronger consistency check: two independent ingest pipelines (REST API and raw hourly dumps) and two independent aggregation pipelines (REST in REST Dask, dump in dump Dask) reconcile to within a few percent on the median article-day. Differences above that level are concentrated in low-traffic article-days where Poisson noise dominates and in days near the bot-share boundary.
 
 **9.3 No alias merging in the REST primary path.** [ingest/ingest_pageviews_rest.py](ingest/ingest_pageviews_rest.py) fetches each canonical title's REST aggregates but does **not** merge aliases listed in [config/articles.yaml](config/articles.yaml). The aliases ARE consumed by the dump-pull code, but since the final analysis is built on REST data, no alias merging is in effect. The config-file header comment was updated to reflect this. If an article was renamed mid-window, the post-rename canonical may under-count compared to the redirect-resolved truth.
 
