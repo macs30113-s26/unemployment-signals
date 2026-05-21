@@ -137,6 +137,101 @@ def granger_table(panel: pd.DataFrame, target: pd.Series, max_lag: int = 8) -> p
     return pd.DataFrame(rows)
 
 
+def cross_correlation_table(panel: pd.DataFrame, target: pd.Series,
+                            max_lag_weeks: int = 26,
+                            log_transform: bool = False) -> pd.DataFrame:
+    """Cross-correlation between attention and target over a window of lags.
+
+    For each group and each lag k in [-max_lag_weeks, +max_lag_weeks], compute
+    the Pearson correlation between attention.shift(k).diff() and target.diff().
+    Positive k means attention leads target by k weeks.
+
+    First-differencing matches the section 5.3 Granger specification for
+    stationarity. If log_transform=True, np.log1p() is applied before
+    differencing; this suppresses the multiplicative COVID 2020 spike that
+    dominates raw .diff() variance (see section 9.5).
+
+    Returns a long-form DataFrame with columns:
+        group, lag_weeks, correlation, n_obs
+    """
+    rows = []
+    for grp in GROUPS:
+        x_raw = panel[grp].astype(float)
+        y_raw = target.astype(float)
+        if log_transform:
+            x_raw = np.log1p(x_raw)
+            y_raw = np.log1p(y_raw)
+        for k in range(-max_lag_weeks, max_lag_weeks + 1):
+            x_shift = x_raw.shift(k).diff()
+            y_diff = y_raw.diff()
+            both = pd.concat([x_shift, y_diff], axis=1).dropna()
+            both.columns = ["x", "y"]
+            if len(both) < 10:
+                rows.append({"group": grp, "lag_weeks": k,
+                             "correlation": np.nan, "n_obs": len(both)})
+                continue
+            r = both["x"].corr(both["y"])
+            rows.append({"group": grp, "lag_weeks": k,
+                         "correlation": r, "n_obs": len(both)})
+    return pd.DataFrame(rows)
+
+
+def cross_correlation_best_lag(xcorr_df: pd.DataFrame) -> pd.DataFrame:
+    """Extract the best (max |correlation|) lag per group from a long-form
+    cross-correlation table."""
+    rows = []
+    for grp, sub in xcorr_df.groupby("group"):
+        sub = sub.dropna(subset=["correlation"])
+        if len(sub) == 0:
+            rows.append({"group": grp, "best_lag_weeks": None,
+                         "correlation_at_best": None, "abs_correlation": None})
+            continue
+        idx = sub["correlation"].abs().idxmax()
+        best = sub.loc[idx]
+        rows.append({"group": grp,
+                     "best_lag_weeks": int(best["lag_weeks"]),
+                     "correlation_at_best": float(best["correlation"]),
+                     "abs_correlation": float(abs(best["correlation"]))})
+    return pd.DataFrame(rows)
+
+
+def fig_cross_correlation(panel: pd.DataFrame, target: pd.Series,
+                          out_path: Path, max_lag_weeks: int = 26):
+    """Plot cross-correlation function vs lag, for each group, both raw .diff()
+    and log .diff() side by side. Positive lag = attention leads target.
+    """
+    xcorr_raw = cross_correlation_table(panel, target, max_lag_weeks, False)
+    xcorr_log = cross_correlation_table(panel, target, max_lag_weeks, True)
+    fig, axes = plt.subplots(2, 2, figsize=(11, 7), sharex=True, sharey=True)
+    for ax, grp in zip(axes.flat, GROUPS):
+        sub_raw = xcorr_raw[xcorr_raw["group"] == grp]
+        sub_log = xcorr_log[xcorr_log["group"] == grp]
+        ax.plot(sub_raw["lag_weeks"], sub_raw["correlation"],
+                lw=1.2, color="#2a4d8f", label="raw .diff()")
+        ax.plot(sub_log["lag_weeks"], sub_log["correlation"],
+                lw=1.2, color="#d96b1a", label="log1p .diff()")
+        ax.axhline(0, color="grey", lw=0.5)
+        ax.axvline(0, color="grey", lw=0.5, ls="--")
+        sub_r = sub_raw.dropna(subset=["correlation"])
+        if len(sub_r):
+            best_idx = sub_r["correlation"].abs().idxmax()
+            best_lag = sub_r.loc[best_idx, "lag_weeks"]
+            best_r = sub_r.loc[best_idx, "correlation"]
+            ax.scatter([best_lag], [best_r], color="#2a4d8f", s=30, zorder=5)
+            ax.annotate(f"lag={int(best_lag)}\nr={best_r:.2f}",
+                        xy=(best_lag, best_r), fontsize=8,
+                        xytext=(5, 5), textcoords="offset points")
+        ax.set_title(grp.replace("_", " ").title())
+        ax.set_xlabel("lag (weeks; positive = attention leads)")
+        ax.set_ylabel("Pearson r")
+        ax.legend(loc="lower right", fontsize=8)
+    fig.suptitle("Cross-correlation: attention lead/lag vs initial jobless claims",
+                 y=1.00)
+    fig.tight_layout()
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+
+
 def changepoint_table(panel: pd.DataFrame, n_bkps: int = 5) -> pd.DataFrame:
     rows = []
     for grp in GROUPS:
@@ -195,6 +290,30 @@ def main():
     granger = granger_table(panel, icsa_weekly)
     print(granger.to_string(index=False))
     granger.to_csv(args.out_dir / "granger_results.csv", index=False)
+
+    print("\nRunning cross-correlation lead-lag analysis...")
+    xcorr_raw = cross_correlation_table(panel, icsa_weekly, max_lag_weeks=26,
+                                        log_transform=False)
+    xcorr_log = cross_correlation_table(panel, icsa_weekly, max_lag_weeks=26,
+                                        log_transform=True)
+    xcorr_raw.to_csv(args.out_dir / "cross_correlation_lead_lag_raw.csv",
+                     index=False)
+    xcorr_log.to_csv(args.out_dir / "cross_correlation_lead_lag_log.csv",
+                     index=False)
+    best_raw = cross_correlation_best_lag(xcorr_raw)
+    best_log = cross_correlation_best_lag(xcorr_log)
+    best_raw["spec"] = "raw_diff"
+    best_log["spec"] = "log_diff"
+    best_all = pd.concat([best_raw, best_log], ignore_index=True)
+    best_all.to_csv(args.out_dir / "cross_correlation_best_lag.csv", index=False)
+    print("  raw .diff() best lag per group:")
+    print(best_raw.to_string(index=False))
+    print("  log1p .diff() best lag per group:")
+    print(best_log.to_string(index=False))
+    fig_cross_correlation(panel, icsa_weekly,
+                          args.out_dir / "04_cross_correlation_lead_lag.png",
+                          max_lag_weeks=26)
+    print(f"  wrote 04_cross_correlation_lead_lag.png + 3 CSVs")
 
     print("\nRunning changepoint detection...")
     cps = changepoint_table(panel)
