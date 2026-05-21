@@ -12,7 +12,7 @@
 #
 # Wikipedia REST API ingest — Layer 1 primary path.
 #
-# Pulls per-article daily pageview aggregates for all 30 curated articles
+# Pulls per-article daily pageview aggregates for all 31 curated articles
 # from the Wikimedia REST API. ~30 HTTP requests total, completes in
 # 1-3 minutes wall-clock.
 #

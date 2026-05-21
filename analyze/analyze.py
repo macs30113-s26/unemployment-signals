@@ -41,7 +41,38 @@ FRED_SERIES = {
 
 
 def load_pageviews(curated_dir: Path, grain: str = "weekly") -> pd.DataFrame:
-    import glob; df = pd.concat([pd.read_csv(p) for p in glob.glob(str(curated_dir / grain / "year=*/part.csv"))], ignore_index=True)
+    """Load curated panel from either Dask flat-CSV output OR v1 pandas
+    partitioned output. Schemas differ:
+
+      v1 pandas:  curated/weekly/year=YYYY/part.csv
+                  columns: period, canonical, group, views
+
+      v2 Dask:    curated_dask_slurm/weekly_dask.csv  (or curated_dask_dump_slurm/)
+                  columns: canonical, group, week, views
+
+    The function normalises both to: week_start (datetime), canonical, grp, views.
+    Auto-detection: if curated_dir/<grain>_dask.csv exists OR
+    curated_dir is itself the Dask flat-CSV directory (contains *_dask.csv),
+    prefer the Dask path (production main path per README §4).
+    """
+    import glob
+    dask_csv = curated_dir / f"{grain}_dask.csv"
+    if dask_csv.exists():
+        df = pd.read_csv(dask_csv)
+        df["week_start"] = pd.to_datetime(df["week"] if grain == "weekly"
+                                          else df["month"] if grain == "monthly"
+                                          else df["day"])
+        df = df.rename(columns={"group": "grp"})
+        return df[["week_start", "canonical", "grp", "views"]]
+    # Fallback: v1 partitioned pandas output
+    pattern = str(curated_dir / grain / "year=*/part.csv")
+    parts = glob.glob(pattern)
+    if not parts:
+        raise FileNotFoundError(
+            f"No Dask flat CSV at {dask_csv} and no v1 partitioned parts at "
+            f"{pattern}. Run aggregate_dask.py or aggregate_pandas.py first."
+        )
+    df = pd.concat([pd.read_csv(p) for p in parts], ignore_index=True)
     df["week_start"] = pd.to_datetime(df["period"])
     df = df.rename(columns={"group": "grp"})
     return df

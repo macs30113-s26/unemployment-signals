@@ -16,17 +16,39 @@ hours) is the fair comparison set.
 Output: analyze/figures/dask_dump_vs_rest_validation.csv with per-row
 relative diffs for the complete-day subset.
 """
+import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-DUMP_CSV = "/scratch/midway3/yinyuanc/wiki-attention/curated_dask_dump_slurm/daily_dask.csv"
-REST_CSV = "/scratch/midway3/yinyuanc/wiki-attention/curated_dask_slurm/daily_dask.csv"
-COMPLETE_DAYS_JSON = "analyze/figures/dump_complete_days.json"
-OUT_CSV = "analyze/figures/dask_dump_vs_rest_validation.csv"
+# Defaults are computed from $USER if not provided on the command line, so
+# anyone with a Midway3 account can reproduce after running aggregate_dask.py
+# with both --source rest and --source dump.
+USER = os.environ.get("USER", "yinyuanc")
+DEFAULT_DUMP = f"/scratch/midway3/{USER}/wiki-attention/curated_dask_dump_slurm/daily_dask.csv"
+DEFAULT_REST = f"/scratch/midway3/{USER}/wiki-attention/curated_dask_slurm/daily_dask.csv"
+DEFAULT_COMPLETE_DAYS = "analyze/figures/dump_complete_days.json"
+DEFAULT_OUT = "analyze/figures/dask_dump_vs_rest_validation.csv"
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--dump-csv", default=DEFAULT_DUMP,
+                    help="Path to Dask dump daily aggregation CSV")
+parser.add_argument("--rest-csv", default=DEFAULT_REST,
+                    help="Path to Dask REST daily aggregation CSV")
+parser.add_argument("--complete-days-json", default=DEFAULT_COMPLETE_DAYS,
+                    help="Path to JSON list of dump days with >=20h coverage")
+parser.add_argument("--out-csv", default=DEFAULT_OUT,
+                    help="Output CSV path")
+args = parser.parse_args()
+
+DUMP_CSV = args.dump_csv
+REST_CSV = args.rest_csv
+COMPLETE_DAYS_JSON = args.complete_days_json
+OUT_CSV = args.out_csv
 
 
 def main():

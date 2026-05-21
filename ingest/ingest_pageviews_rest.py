@@ -2,7 +2,7 @@
 REST API ingest — Layer 1 primary path.
 
 Wikimedia provides a public REST API that returns pre-aggregated per-article
-daily pageview counts. For our 30 curated articles across the 2019-2026
+daily pageview counts. For our 31 curated articles across the 2019-2026
 window, this is ~30 HTTP requests total — each returning ~2700 days of data.
 Total wall-clock: 1-3 minutes, parallelised with a small multiprocessing pool.
 
@@ -48,7 +48,7 @@ REST_URL = (
 
 
 def load_articles(yaml_path: Path):
-    """Return list of (canonical_title, group_name) for all 30 articles."""
+    """Return list of (canonical_title, group_name) for all 31 articles."""
     config = yaml.safe_load(yaml_path.read_text())
     articles = []
     for group_name, group_def in config["groups"].items():
