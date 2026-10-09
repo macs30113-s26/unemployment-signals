@@ -1,10 +1,8 @@
 # Public Attention to Unemployment and Economic Insecurity: A Wikipedia-Pageviews Analysis (2019–2026)
 
-**MACS30113 Final Project — Solo project**
 **Author:** Yinyuan Chen
-**Course:** Large-Scale Computing for the Social Sciences, Spring 2026
+
 **Platform:** UChicago RCC Midway3 (Slurm, caslake partition)
-**Repo:** https://github.com/macs30113-s26/final-project-unemployment-signals
 
 ---
 
